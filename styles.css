@@ -790,6 +790,15 @@ body {
 }
 
 @media (max-width: 640px) {
+  .card {
+    padding: 1.25rem;
+  }
+
+  .qr-display-area {
+    max-width: 100%;
+    padding: 1rem;
+  }
+
   .nav-links {
     display: none;
     position: absolute;
