@@ -285,7 +285,7 @@ body::before {
   align-items: start;
 }
 
-/* Cards Common, Rotating Border Glow & Inner Moving White Glow */
+/* Cards Common, Dual Rotating Border Glow & Inner Moving White Glow */
 .card,
 .feature-card,
 .history-card,
@@ -299,14 +299,20 @@ body::before {
     conic-gradient(
       from var(--border-angle),
       var(--border-color) 0deg,
+      var(--border-color) 60deg,
+      var(--border-beam-trail) 95deg,
+      var(--border-beam-color) 140deg,
+      var(--border-beam-core) 165deg,
+      var(--border-beam-color) 175deg,
+      var(--border-color) 200deg,
       var(--border-color) 240deg,
-      var(--border-beam-trail) 280deg,
-      var(--border-beam-color) 325deg,
+      var(--border-beam-trail) 275deg,
+      var(--border-beam-color) 320deg,
       var(--border-beam-core) 345deg,
       var(--border-beam-color) 355deg,
       var(--border-color) 360deg
     ) border-box;
-  animation: rotateBorderBeam 4.5s linear infinite;
+  animation: rotateBorderBeam 4s linear infinite;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
