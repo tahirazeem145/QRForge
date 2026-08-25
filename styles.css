@@ -23,9 +23,9 @@
   --danger: #ef4444;
   --danger-bg: #fef2f2;
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.06), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 12px 30px -4px rgba(15, 23, 42, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -36,16 +36,16 @@
   --transition-normal: 0.25s ease;
 
   /* Card Inner Moving Glow - White Shade */
-  --card-glow-color: rgba(255, 255, 255, 0.75);
-  --card-glow-ambient: rgba(255, 255, 255, 0.25);
-  --card-glow-edge: rgba(255, 255, 255, 0.9);
-  --card-glow-blur: 16px;
+  --card-glow-color: rgba(255, 255, 255, 0.9);
+  --card-glow-ambient: rgba(255, 255, 255, 0.35);
+  --card-glow-edge: rgba(255, 255, 255, 0.95);
+  --card-glow-blur: 14px;
 
   /* n8n Canvas Dot Grid & Ambient Aura Tokens - Light Mode */
-  --grid-dot: rgba(15, 23, 42, 0.08);
-  --aura-top-primary: rgba(99, 102, 241, 0.09);
-  --aura-accent-coral: rgba(255, 109, 90, 0.06);
-  --aura-accent-indigo: rgba(79, 70, 229, 0.05);
+  --grid-dot: rgba(15, 23, 42, 0.06);
+  --aura-top-primary: rgba(99, 102, 241, 0.07);
+  --aura-accent-coral: rgba(255, 109, 90, 0.04);
+  --aura-accent-indigo: rgba(79, 70, 229, 0.04);
   --header-bg: rgba(255, 255, 255, 0.85);
 }
 
