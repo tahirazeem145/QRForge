@@ -110,6 +110,52 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Base Scroll-Reveal Initial State (Hidden, Soft Blurred, Slow Elevating) */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(32px);
+  filter: blur(6px);
+  transition: 
+    opacity 1.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1.25s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+/* Revealed State (Smoothly emerges slowly when scrolled into view) */
+.reveal-on-scroll.is-revealed {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0px);
+}
+
+/* Smooth Fade & Blur for Zero-Gravity Floating Cards */
+.card.reveal-on-scroll,
+.feature-card.reveal-on-scroll,
+.history-card.reveal-on-scroll,
+.empty-state.reveal-on-scroll {
+  transform: none;
+  opacity: 0;
+  filter: blur(8px);
+  transition: 
+    opacity 1.4s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 1.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card.reveal-on-scroll.is-revealed,
+.feature-card.reveal-on-scroll.is-revealed,
+.history-card.reveal-on-scroll.is-revealed,
+.empty-state.reveal-on-scroll.is-revealed {
+  opacity: 1;
+  filter: blur(0px);
+}
+
+/* Stagger delays for cascading emergence */
+.stagger-1 { transition-delay: 0.12s; }
+.stagger-2 { transition-delay: 0.26s; }
+.stagger-3 { transition-delay: 0.40s; }
+.stagger-4 { transition-delay: 0.54s; }
+
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--bg-main);

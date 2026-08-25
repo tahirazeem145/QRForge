@@ -47,23 +47,15 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toast Container
   const toastContainer = document.getElementById('toastContainer');
 
-  // --- Theme Toggle Logic ---
-  const savedTheme = localStorage.getItem('qrforge_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  setTheme(savedTheme);
+  // --- Dark Theme Default ---
+  document.documentElement.setAttribute('data-theme', 'dark');
 
-  themeToggle.addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    const next = current === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-  });
-
-  function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('qrforge_theme', theme);
-    if (themeIcon) {
-      themeIcon.setAttribute('data-feather', theme === 'dark' ? 'sun' : 'moon');
-      if (typeof feather !== 'undefined') feather.replace();
-    }
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+    });
   }
 
   // --- Mobile Navigation Menu ---
@@ -969,9 +961,91 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(physicsTick);
   }
 
-  // Initial QR Code rendering, Background Wave & Zero-Gravity Init
+  // --- Slow & Smooth Scroll Reveal System ---
+  function initScrollReveal() {
+    const revealSelectors = [
+      '.hero-section',
+      '.workspace-grid',
+      '.generator-card',
+      '.preview-card',
+      '.customization-card',
+      '.section-divider',
+      '.history-section',
+      '.section-header',
+      '.history-card',
+      '.empty-state',
+      '.about-section',
+      '.about-intro',
+      '.feature-card',
+      '.site-footer'
+    ];
+
+    const elements = document.querySelectorAll(revealSelectors.join(', '));
+
+    elements.forEach((el) => {
+      el.classList.add('reveal-on-scroll');
+
+      // Add stagger classes for feature cards
+      if (el.classList.contains('feature-card')) {
+        const parent = el.parentElement;
+        if (parent) {
+          const idx = Array.from(parent.children).indexOf(el);
+          el.classList.add(`stagger-${(idx % 3) + 1}`);
+        }
+      }
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '0px 0px -40px 0px',
+        threshold: 0.12
+      }
+    );
+
+    elements.forEach((el) => observer.observe(el));
+
+    // Dynamic Observer for dynamically added elements (like history items)
+    const domObserver = new MutationObserver(() => {
+      document.querySelectorAll('.history-card, .empty-state').forEach((el) => {
+        if (!el.classList.contains('reveal-on-scroll')) {
+          el.classList.add('reveal-on-scroll');
+          observer.observe(el);
+        }
+      });
+    });
+    domObserver.observe(document.body, { childList: true, subtree: true });
+
+    // Smooth Anchor Scrolling with Header Offset
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href');
+        if (!targetId || targetId === '#') return;
+        const targetElement = document.querySelector(targetId);
+        if (targetElement) {
+          e.preventDefault();
+          const headerHeight = 76;
+          const targetPos = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+          window.scrollTo({
+            top: targetPos,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+  }
+
+  // Initial QR Code rendering, Background Wave, Zero-Gravity & Scroll Reveal Init
   generateQR(false);
   renderHistory();
   initBackgroundWaveCanvas();
   initZeroGravityCards();
+  initScrollReveal();
 });
