@@ -404,6 +404,98 @@ body::before {
   transform: translateY(-1px);
 }
 
+/* Card Motion Toggle Switch (Moving vs Fixed Layout) */
+.motion-toggle {
+  position: relative;
+  width: 68px;
+  height: 38px;
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.motion-toggle:hover {
+  border-color: var(--primary);
+  background-color: var(--bg-card);
+}
+
+.motion-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  z-index: 2;
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  pointer-events: none;
+}
+
+.motion-toggle-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.motion-toggle-thumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1), background-color var(--transition-fast), border-color var(--transition-fast);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Active State: Cards are Free to Move (Thumb slides right over float icon) */
+.motion-toggle.active .motion-toggle-thumb {
+  transform: translateX(30px);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.motion-toggle.active .float-icon {
+  color: var(--bg-main);
+}
+
+.motion-toggle.active .lock-icon {
+  color: var(--text-muted);
+}
+
+/* Inactive/Locked State: Cards are Locked (Thumb sits left over lock icon) */
+.motion-toggle:not(.active) .motion-toggle-thumb {
+  transform: translateX(0);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.motion-toggle:not(.active) .lock-icon {
+  color: var(--bg-main);
+}
+
+.motion-toggle:not(.active) .float-icon {
+  color: var(--text-muted);
+}
+
+/* Cards Locked Body State */
+body.cards-locked .card,
+body.cards-locked .feature-card,
+body.cards-locked .history-card,
+body.cards-locked .empty-state {
+  cursor: default !important;
+  touch-action: auto !important;
+}
+
 .mobile-toggle {
   display: none;
 }
