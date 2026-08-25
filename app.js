@@ -1085,10 +1085,152 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initial QR Code rendering, Background Wave, Zero-Gravity & Scroll Reveal Init
+  // --- Interactive Hero Title Wave on Cursor Motion ---
+  function initHeroWaveText() {
+    const titleEl = document.querySelector('.hero-title');
+    if (!titleEl) return;
+
+    const originalText = titleEl.textContent.trim();
+    const words = originalText.split(/\s+/);
+
+    titleEl.innerHTML = '';
+    const charElements = [];
+
+    words.forEach((word, wIdx) => {
+      const wordSpan = document.createElement('span');
+      wordSpan.className = 'wave-word';
+
+      for (let i = 0; i < word.length; i++) {
+        const charSpan = document.createElement('span');
+        charSpan.className = 'wave-char';
+        charSpan.textContent = word[i];
+        wordSpan.appendChild(charSpan);
+        charElements.push(charSpan);
+      }
+
+      titleEl.appendChild(wordSpan);
+
+      if (wIdx < words.length - 1) {
+        const space = document.createElement('span');
+        space.className = 'wave-space';
+        space.innerHTML = '&nbsp;';
+        titleEl.appendChild(space);
+      }
+    });
+
+    let mouseX = -1000;
+    let mouseY = -1000;
+    let isHovering = false;
+
+    titleEl.addEventListener('mouseenter', () => {
+      isHovering = true;
+    });
+
+    titleEl.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      isHovering = true;
+    }, { passive: true });
+
+    titleEl.addEventListener('mouseleave', () => {
+      isHovering = false;
+      mouseX = -1000;
+      mouseY = -1000;
+    });
+
+    // Touch support for mobile devices
+    titleEl.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches[0]) {
+        mouseX = e.touches[0].clientX;
+        mouseY = e.touches[0].clientY;
+        isHovering = true;
+      }
+    }, { passive: true });
+
+    titleEl.addEventListener('touchend', () => {
+      isHovering = false;
+      mouseX = -1000;
+      mouseY = -1000;
+    });
+
+    const charsData = charElements.map((el, index) => ({
+      el,
+      index,
+      targetY: 0,
+      currentY: 0,
+      targetRot: 0,
+      currentRot: 0,
+      targetScale: 1,
+      currentScale: 1,
+      glow: 0
+    }));
+
+    function updateWave() {
+      const waveRadius = 110; // Influence radius around cursor
+
+      charsData.forEach((char) => {
+        const rect = char.el.getBoundingClientRect();
+        const charCenterX = rect.left + rect.width / 2;
+        const charCenterY = rect.top + rect.height / 2;
+
+        if (isHovering && mouseX > -500) {
+          const dx = charCenterX - mouseX;
+          const dy = charCenterY - mouseY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < waveRadius) {
+            const factor = 1 - dist / waveRadius;
+            const waveIntensity = Math.sin(factor * Math.PI * 0.5);
+            char.targetY = -waveIntensity * 20; // Upward crest lift
+            char.targetRot = -(dx / waveRadius) * 16; // Wave tilt
+            char.targetScale = 1 + waveIntensity * 0.22;
+            char.glow = waveIntensity;
+          } else {
+            char.targetY = 0;
+            char.targetRot = 0;
+            char.targetScale = 1;
+            char.glow = 0;
+          }
+        } else {
+          char.targetY = 0;
+          char.targetRot = 0;
+          char.targetScale = 1;
+          char.glow = 0;
+        }
+
+        // Smooth spring interpolation
+        char.currentY += (char.targetY - char.currentY) * 0.20;
+        char.currentRot += (char.targetRot - char.currentRot) * 0.20;
+        char.currentScale += (char.targetScale - char.currentScale) * 0.20;
+
+        if (
+          Math.abs(char.currentY) > 0.05 ||
+          Math.abs(char.currentRot) > 0.05 ||
+          Math.abs(char.currentScale - 1) > 0.005
+        ) {
+          char.el.style.transform = `translate3d(0, ${char.currentY.toFixed(2)}px, 0) rotate(${char.currentRot.toFixed(2)}deg) scale(${char.currentScale.toFixed(3)})`;
+          if (char.glow > 0.12) {
+            char.el.classList.add('is-waving');
+          } else {
+            char.el.classList.remove('is-waving');
+          }
+        } else {
+          char.el.style.transform = 'translate3d(0, 0, 0) rotate(0deg) scale(1)';
+          char.el.classList.remove('is-waving');
+        }
+      });
+
+      requestAnimationFrame(updateWave);
+    }
+
+    requestAnimationFrame(updateWave);
+  }
+
+  // Initial QR Code rendering, Background Wave, Zero-Gravity, Hero Wave & Scroll Reveal Init
   generateQR(false);
   renderHistory();
   initBackgroundWaveCanvas();
   initZeroGravityCards();
+  initHeroWaveText();
   initScrollReveal();
 });

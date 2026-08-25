@@ -512,6 +512,35 @@ body.cards-locked .empty-state {
   letter-spacing: -0.03em;
   color: var(--text-primary);
   margin-bottom: 0.75rem;
+  display: inline-block;
+  cursor: default;
+  user-select: none;
+}
+
+.wave-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.wave-space {
+  display: inline-block;
+}
+
+.wave-char {
+  display: inline-block;
+  will-change: transform, color, text-shadow;
+  transform-origin: center bottom;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
+}
+
+.wave-char.is-waving {
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7), 0 0 32px rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="light"] .wave-char.is-waving {
+  color: #0f172a;
+  text-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
 }
 
 .hero-subtitle {
