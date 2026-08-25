@@ -3,20 +3,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Color Palette - Light Mode */
+  /* Color Palette - Light Mode (Monochrome Dark Primary) */
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
   --bg-subtle: #f1f5f9;
   --bg-input: #ffffff;
   --border-color: #e2e8f0;
-  --border-focus: #6366f1;
+  --border-focus: #0f172a;
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #94a3b8;
   
-  --primary: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #eef2ff;
+  --primary: #0f172a;
+  --primary-hover: #000000;
+  --primary-light: rgba(15, 23, 42, 0.08);
   
   --success: #10b981;
   --success-bg: #ecfdf5;
@@ -42,15 +42,15 @@
   --card-glow-blur: 14px;
 
   /* Rotating Border Glow Tokens - Light Mode */
-  --border-beam-color: #6366f1;
+  --border-beam-color: #0f172a;
   --border-beam-core: #ffffff;
-  --border-beam-trail: rgba(99, 102, 241, 0.25);
+  --border-beam-trail: rgba(15, 23, 42, 0.25);
 
   /* n8n Canvas Dot Grid & Ambient Aura Tokens - Light Mode */
   --grid-dot: rgba(15, 23, 42, 0.06);
-  --aura-top-primary: rgba(99, 102, 241, 0.07);
+  --aura-top-primary: rgba(15, 23, 42, 0.04);
   --aura-accent-coral: rgba(255, 109, 90, 0.04);
-  --aura-accent-indigo: rgba(79, 70, 229, 0.04);
+  --aura-accent-indigo: rgba(15, 23, 42, 0.03);
   --header-bg: rgba(255, 255, 255, 0.85);
 }
 
@@ -62,41 +62,41 @@
 }
 
 [data-theme="dark"] {
-  --bg-main: #0b0f19;
-  --bg-card: #151c2c;
-  --bg-subtle: #1e293b;
-  --bg-input: #1e293b;
-  --border-color: #334155;
-  --border-focus: #818cf8;
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #64748b;
+  --bg-main: #000000;
+  --bg-card: #0c0c0e;
+  --bg-subtle: #18181b;
+  --bg-input: #141416;
+  --border-color: #27272a;
+  --border-focus: #ffffff;
+  --text-primary: #ffffff;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
   
-  --primary: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-light: rgba(99, 102, 241, 0.15);
+  --primary: #ffffff;
+  --primary-hover: #e4e4e7;
+  --primary-light: rgba(255, 255, 255, 0.12);
   
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
 
   /* Card Inner Moving Glow - White Shade in Dark Mode */
-  --card-glow-color: rgba(255, 255, 255, 0.18);
-  --card-glow-ambient: rgba(255, 255, 255, 0.05);
-  --card-glow-edge: rgba(255, 255, 255, 0.3);
+  --card-glow-color: rgba(255, 255, 255, 0.22);
+  --card-glow-ambient: rgba(255, 255, 255, 0.06);
+  --card-glow-edge: rgba(255, 255, 255, 0.35);
   --card-glow-blur: 20px;
 
   /* Rotating Border Glow Tokens - Dark Mode */
-  --border-beam-color: #818cf8;
+  --border-beam-color: #ffffff;
   --border-beam-core: #ffffff;
-  --border-beam-trail: rgba(129, 140, 248, 0.3);
+  --border-beam-trail: rgba(255, 255, 255, 0.35);
 
   /* n8n Canvas Dot Grid & Ambient Aura Tokens - Dark Mode */
-  --grid-dot: rgba(255, 255, 255, 0.08);
-  --aura-top-primary: rgba(99, 102, 241, 0.2);
-  --aura-accent-coral: rgba(255, 109, 90, 0.13);
-  --aura-accent-indigo: rgba(130, 71, 229, 0.15);
-  --header-bg: rgba(21, 28, 44, 0.85);
+  --grid-dot: rgba(255, 255, 255, 0.09);
+  --aura-top-primary: rgba(255, 255, 255, 0.04);
+  --aura-accent-coral: rgba(255, 255, 255, 0.02);
+  --aura-accent-indigo: rgba(255, 255, 255, 0.02);
+  --header-bg: rgba(8, 8, 10, 0.85);
 }
 
 /* Reset & Base */
@@ -195,12 +195,17 @@ body::before {
 .logo-icon {
   width: 32px;
   height: 32px;
-  background: linear-gradient(135deg, var(--primary), #818cf8);
+  background: linear-gradient(135deg, #0f172a, #334155);
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .logo-icon {
+  background: linear-gradient(135deg, #ffffff, #cbd5e1);
+  color: #0f172a;
 }
 
 .nav-links {
@@ -596,6 +601,10 @@ body::before {
   color: #ffffff;
 }
 
+[data-theme="dark"] .btn-primary {
+  color: #0f172a;
+}
+
 .btn-primary:hover {
   background-color: var(--primary-hover);
   transform: translateY(-1px);
@@ -767,7 +776,17 @@ body::before {
     90deg,
     transparent 0%,
     var(--border-color) 35%,
-    rgba(99, 102, 241, 0.4) 75%,
+    rgba(15, 23, 42, 0.35) 75%,
+    var(--primary) 100%
+  );
+}
+
+[data-theme="dark"] .divider-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--border-color) 35%,
+    rgba(255, 255, 255, 0.35) 75%,
     var(--primary) 100%
   );
 }
@@ -776,7 +795,17 @@ body::before {
   background: linear-gradient(
     90deg,
     var(--primary) 0%,
-    rgba(99, 102, 241, 0.4) 25%,
+    rgba(15, 23, 42, 0.35) 25%,
+    var(--border-color) 65%,
+    transparent 100%
+  );
+}
+
+[data-theme="dark"] .section-divider .divider-line:last-child {
+  background: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    rgba(255, 255, 255, 0.35) 25%,
     var(--border-color) 65%,
     transparent 100%
   );
@@ -828,14 +857,18 @@ body::before {
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   border: 1.5px solid var(--primary);
-  box-shadow: 0 0 14px 2px rgba(99, 102, 241, 0.4), var(--shadow-sm);
+  box-shadow: 0 0 14px 2px rgba(15, 23, 42, 0.2), var(--shadow-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--primary);
+  color: var(--text-primary);
   position: relative;
   z-index: 2;
   transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+[data-theme="dark"] .node-qr-icon {
+  box-shadow: 0 0 14px 2px rgba(255, 255, 255, 0.2), var(--shadow-sm);
 }
 
 .node-qr-icon svg {
@@ -849,9 +882,13 @@ body::before {
   width: 36px;
   height: 36px;
   border-radius: var(--radius-md);
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(15, 23, 42, 0.1);
   animation: nodePulseRing 2.6s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
   z-index: 1;
+}
+
+[data-theme="dark"] .node-pulse {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 @keyframes nodePulseRing {

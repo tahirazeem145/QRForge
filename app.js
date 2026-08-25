@@ -546,14 +546,12 @@ document.addEventListener('DOMContentLoaded', () => {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
 
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-      // Dot color palette
-      // Dark mode: soft luminous glowing white/ice-blue dots
-      // Light mode: sleek deep slate-charcoal micro-dots with crisp alpha
-      const r = isDark ? 235 : 30;
-      const g = isDark ? 240 : 41;
-      const b = isDark ? 255 : 59;
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';      // Dot color palette
+      // Dark mode: soft luminous white dots
+      // Light mode: sleek deep dark slate micro-dots
+      const r = isDark ? 255 : 15;
+      const g = isDark ? 255 : 23;
+      const b = isDark ? 255 : 42;
 
       for (let ix = 0; ix < cols; ix++) {
         const baseX = (ix - 1) * spacing;
@@ -575,7 +573,6 @@ document.addEventListener('DOMContentLoaded', () => {
           // Mouse ripple interaction
           let mouseDistOffset = 0;
           let mouseAlphaBoost = 0;
-          let isNearMouse = false;
           if (mouseX > -500) {
             const dx = (baseX + offsetX) - mouseX;
             const dy = (baseY + offsetY) - mouseY;
@@ -584,8 +581,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dist < maxDist) {
               const factor = (1 - dist / maxDist);
               mouseDistOffset = -Math.sin(factor * Math.PI) * 9;
-              mouseAlphaBoost = factor * (isDark ? 0.3 : 0.2);
-              isNearMouse = true;
+              mouseAlphaBoost = factor * (isDark ? 0.35 : 0.25);
             }
           }
 
@@ -598,26 +594,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
           // Refined opacity: clean, subtle, non-intrusive
           let alpha;
-          let dotR = r;
-          let dotG = g;
-          let dotB = b;
-
           if (isDark) {
             alpha = 0.055 + (combinedWave + 1) * 0.075 + mouseAlphaBoost;
           } else {
-            // Elegant light mode opacity: 0.04 to 0.125
             alpha = 0.04 + (combinedWave + 1) * 0.045 + mouseAlphaBoost;
-            if (isNearMouse) {
-              // Subtle indigo accent near cursor in light mode
-              dotR = 79;
-              dotG = 70;
-              dotB = 229;
-            }
           }
 
           ctx.beginPath();
           ctx.arc(posX, posY, radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(${dotR}, ${dotG}, ${dotB}, ${alpha.toFixed(3)})`;
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
           ctx.fill();
         }
       }
