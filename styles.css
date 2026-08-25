@@ -810,11 +810,11 @@ body::before {
   }
 }
 
-/* Center Glowing Node Socket */
+/* Center Glowing QR Code Node Badge */
 .divider-node {
   position: relative;
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   margin: 0 0.85rem;
   display: flex;
   align-items: center;
@@ -822,38 +822,49 @@ body::before {
   flex-shrink: 0;
 }
 
-.node-core {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), #818cf8);
-  box-shadow: 0 0 12px 3px var(--primary);
+.node-qr-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1.5px solid var(--primary);
+  box-shadow: 0 0 14px 2px rgba(99, 102, 241, 0.4), var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
   position: relative;
   z-index: 2;
-  border: 1.5px solid #ffffff;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.node-qr-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.2;
 }
 
 .node-pulse {
   position: absolute;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.25);
-  animation: nodePulseRing 2.4s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: rgba(99, 102, 241, 0.2);
+  animation: nodePulseRing 2.6s cubic-bezier(0.25, 0.8, 0.25, 1) infinite;
   z-index: 1;
 }
 
 @keyframes nodePulseRing {
   0% {
-    transform: scale(0.5);
-    opacity: 0.9;
+    transform: scale(0.7);
+    opacity: 0.85;
   }
   70% {
-    transform: scale(1.6);
+    transform: scale(1.5);
     opacity: 0;
   }
   100% {
-    transform: scale(1.6);
+    transform: scale(1.5);
     opacity: 0;
   }
 }
