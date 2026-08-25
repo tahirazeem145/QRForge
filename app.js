@@ -148,15 +148,32 @@ document.addEventListener('DOMContentLoaded', () => {
   sizeSelect.addEventListener('change', () => generateQR(false));
   ecSelect.addEventListener('change', () => generateQR(false));
 
+  // Live input synchronization for URL & Text
+  const urlInput = document.getElementById('urlInput');
+  const textInput = document.getElementById('textInput');
+
+  if (urlInput) {
+    urlInput.addEventListener('input', () => {
+      clearErrors();
+      generateQR(false);
+    });
+  }
+
+  if (textInput) {
+    textInput.addEventListener('input', () => {
+      clearErrors();
+      generateQR(false);
+    });
+  }
+
   // --- Dynamic Data Extraction ---
   function getQRData() {
     clearErrors();
     let data = '';
-    let isValid = true;
 
     if (currentType === 'url') {
       const input = document.getElementById('urlInput');
-      let val = input.value.trim();
+      let val = input ? input.value.trim() : '';
       if (!val) {
         showError('urlGroup', 'Please enter a valid URL.');
         return null;
@@ -167,55 +184,15 @@ document.addEventListener('DOMContentLoaded', () => {
       data = val;
     } else if (currentType === 'text') {
       const input = document.getElementById('textInput');
-      const val = input.value.trim();
+      const val = input ? input.value.trim() : '';
       if (!val) {
         showError('textGroup', 'Please enter text to encode.');
         return null;
       }
       data = val;
-    } else if (currentType === 'wifi') {
-      const ssid = document.getElementById('wifiSsid').value.trim();
-      const pass = document.getElementById('wifiPassword').value;
-      const sec = document.getElementById('wifiSecurity').value;
-      const hidden = document.getElementById('wifiHidden').checked;
-
-      if (!ssid) {
-        showError('wifiSsidGroup', 'Please enter network SSID.');
-        return null;
-      }
-      // WIFI:S:ssid;T:WPA;P:password;H:true;;
-      data = `WIFI:S:${escapeWifiStr(ssid)};T:${sec};P:${escapeWifiStr(pass)};H:${hidden ? 'true' : 'false'};;`;
-    } else if (currentType === 'email') {
-      const email = document.getElementById('emailAddress').value.trim();
-      const subject = document.getElementById('emailSubject').value.trim();
-      const body = document.getElementById('emailBody').value.trim();
-
-      if (!email || !email.includes('@')) {
-        showError('emailGroup', 'Please enter a valid email address.');
-        return null;
-      }
-      let mailto = `mailto:${email}`;
-      const params = [];
-      if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
-      if (body) params.push(`body=${encodeURIComponent(body)}`);
-      if (params.length > 0) {
-        mailto += '?' + params.join('&');
-      }
-      data = mailto;
-    } else if (currentType === 'phone') {
-      const phone = document.getElementById('phoneInput').value.trim();
-      if (!phone) {
-        showError('phoneGroup', 'Please enter a valid phone number.');
-        return null;
-      }
-      data = `tel:${phone}`;
     }
 
     return data;
-  }
-
-  function escapeWifiStr(str) {
-    return str.replace(/([\\;:,"])/g, '\\$1');
   }
 
   function showError(groupId, message) {
@@ -267,16 +244,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   clearBtn.addEventListener('click', () => {
-    document.getElementById('urlInput').value = '';
-    document.getElementById('textInput').value = '';
-    document.getElementById('wifiSsid').value = '';
-    document.getElementById('wifiPassword').value = '';
-    document.getElementById('wifiSecurity').value = 'WPA';
-    document.getElementById('wifiHidden').checked = false;
-    document.getElementById('emailAddress').value = '';
-    document.getElementById('emailSubject').value = '';
-    document.getElementById('emailBody').value = '';
-    document.getElementById('phoneInput').value = '';
+    const urlInput = document.getElementById('urlInput');
+    if (urlInput) urlInput.value = '';
+    const textInput = document.getElementById('textInput');
+    if (textInput) textInput.value = '';
     clearErrors();
     generateQR(false);
     showToast('Form cleared', 'rotate-ccw');

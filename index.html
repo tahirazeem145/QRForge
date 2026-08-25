@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>QRForge — Modern QR Code Generator</title>
-  <meta name="description" content="Generate customizable, privacy-first QR codes for links, text, Wi-Fi, email, and phone numbers instantly in your browser.">
+  <meta name="description" content="Generate customizable, privacy-first QR codes for links and text instantly in your browser.">
   
   <!-- CSS Stylesheet -->
   <link rel="stylesheet" href="styles.css">
@@ -91,18 +91,6 @@
                 <i data-feather="file-text" class="tab-icon"></i>
                 <span>Text</span>
               </button>
-              <button class="type-tab" data-type="wifi" role="tab">
-                <i data-feather="wifi" class="tab-icon"></i>
-                <span>Wi-Fi</span>
-              </button>
-              <button class="type-tab" data-type="email" role="tab">
-                <i data-feather="mail" class="tab-icon"></i>
-                <span>Email</span>
-              </button>
-              <button class="type-tab" data-type="phone" role="tab">
-                <i data-feather="phone" class="tab-icon"></i>
-                <span>Phone</span>
-              </button>
             </div>
 
             <!-- Dynamic Input Forms Container -->
@@ -125,63 +113,6 @@
                   <textarea id="textInput" class="form-textarea" placeholder="Type any text or message here..."></textarea>
                   <p class="form-helper">Enter plain text, notes, or message content.</p>
                   <p class="form-error">Please enter text to encode.</p>
-                </div>
-              </div>
-
-              <!-- 3. Wi-Fi Form -->
-              <div class="form-type-content" id="form-wifi" style="display: none;">
-                <div class="form-group" id="wifiSsidGroup">
-                  <label class="form-label" for="wifiSsid">Network Name (SSID)</label>
-                  <input type="text" id="wifiSsid" class="form-input" placeholder="Home WiFi Network">
-                  <p class="form-error">Please enter network SSID.</p>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="wifiPassword">Password</label>
-                  <input type="password" id="wifiPassword" class="form-input" placeholder="Network password">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="wifiSecurity">Security</label>
-                  <select id="wifiSecurity" class="form-select">
-                    <option value="WPA">WPA/WPA2</option>
-                    <option value="WEP">WEP</option>
-                    <option value="nopass">None</option>
-                  </select>
-                </div>
-
-                <label class="checkbox-group">
-                  <input type="checkbox" id="wifiHidden" class="checkbox-input">
-                  <span class="form-label" style="margin-bottom: 0;">Hidden network</span>
-                </label>
-              </div>
-
-              <!-- 4. Email Form -->
-              <div class="form-type-content" id="form-email" style="display: none;">
-                <div class="form-group" id="emailGroup">
-                  <label class="form-label" for="emailAddress">Email address</label>
-                  <input type="email" id="emailAddress" class="form-input" placeholder="name@example.com">
-                  <p class="form-error">Please enter a valid email address.</p>
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="emailSubject">Subject</label>
-                  <input type="text" id="emailSubject" class="form-input" placeholder="Inquiry about services">
-                </div>
-
-                <div class="form-group">
-                  <label class="form-label" for="emailBody">Message</label>
-                  <textarea id="emailBody" class="form-textarea" placeholder="Hello, I would like to get in touch..."></textarea>
-                </div>
-              </div>
-
-              <!-- 5. Phone Form -->
-              <div class="form-type-content" id="form-phone" style="display: none;">
-                <div class="form-group" id="phoneGroup">
-                  <label class="form-label" for="phoneInput">Phone number</label>
-                  <input type="tel" id="phoneInput" class="form-input" placeholder="+1 (555) 000-0000">
-                  <p class="form-helper">Include country code for best results (e.g. +1234567890).</p>
-                  <p class="form-error">Please enter a valid phone number.</p>
                 </div>
               </div>
 
