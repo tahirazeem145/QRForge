@@ -105,7 +105,19 @@ body {
   position: relative;
 }
 
-/* n8n Style Fixed Canvas Dot Grid & Ambient Glowing Aura */
+/* Fixed Animated Wave Dot Matrix Canvas */
+.bg-wave-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  display: block;
+}
+
+/* n8n Style Fixed Ambient Glowing Aura Background */
 body::before {
   content: '';
   position: fixed;
@@ -113,16 +125,15 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: -1;
+  z-index: -2;
   pointer-events: none;
   background-color: var(--bg-main);
   background-image: 
-    radial-gradient(var(--grid-dot) 1.25px, transparent 1.25px),
     radial-gradient(ellipse 80% 50% at 50% -10%, var(--aura-top-primary) 0%, transparent 70%),
     radial-gradient(ellipse 60% 40% at 85% 15%, var(--aura-accent-coral) 0%, transparent 60%),
     radial-gradient(ellipse 50% 35% at 15% 25%, var(--aura-accent-indigo) 0%, transparent 60%);
-  background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100%;
-  background-position: 0 0, center top, right top, left top;
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-position: center top, right top, left top;
   transition: background-color var(--transition-normal);
 }
 

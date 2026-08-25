@@ -479,7 +479,143 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2800);
   }
 
-  // Initial QR Code rendering
+  // --- Background Dot Particle Wave Canvas ---
+  function initBackgroundWaveCanvas() {
+    const canvas = document.getElementById('bgWaveCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+    let animationFrameId = null;
+
+    // Grid spacing
+    const spacing = 26;
+    let cols = 0;
+    let rows = 0;
+
+    // Mouse tracking for interactive wave perturbation
+    let mouseX = -1000;
+    let mouseY = -1000;
+    let targetMouseX = -1000;
+    let targetMouseY = -1000;
+
+    window.addEventListener('mousemove', (e) => {
+      targetMouseX = e.clientX;
+      targetMouseY = e.clientY;
+    }, { passive: true });
+
+    window.addEventListener('mouseleave', () => {
+      targetMouseX = -1000;
+      targetMouseY = -1000;
+    });
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      cols = Math.ceil(width / spacing) + 3;
+      rows = Math.ceil(height / spacing) + 3;
+    }
+
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+
+    const startTime = performance.now();
+
+    function render(currentTime) {
+      if (document.hidden) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
+      const elapsed = (currentTime - startTime) * 0.001;
+
+      // Smooth mouse interpolation
+      mouseX += (targetMouseX - mouseX) * 0.08;
+      mouseY += (targetMouseY - mouseY) * 0.08;
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      // Dot color palette
+      // Dark mode: soft glowing luminous white dots
+      // Light mode: distinct clean black dots
+      const r = isDark ? 240 : 0;
+      const g = isDark ? 245 : 0;
+      const b = isDark ? 255 : 0;
+
+      for (let ix = 0; ix < cols; ix++) {
+        const baseX = (ix - 1) * spacing;
+
+        for (let iy = 0; iy < rows; iy++) {
+          const baseY = (iy - 1) * spacing;
+
+          // Multi-harmonic sinusoidal wave equation
+          const wave1 = Math.sin(ix * 0.22 + elapsed * 1.5);
+          const wave2 = Math.cos(iy * 0.2 + elapsed * 1.1);
+          const wave3 = Math.sin((ix * 0.15 + iy * 0.15) + elapsed * 1.8);
+          
+          const combinedWave = (wave1 * 0.5 + wave2 * 0.3 + wave3 * 0.2);
+
+          // Wave displacement
+          const offsetY = combinedWave * 9;
+          const offsetX = Math.cos(ix * 0.18 + elapsed * 0.9) * 3;
+
+          // Mouse ripple interaction
+          let mouseDistOffset = 0;
+          let mouseAlphaBoost = 0;
+          if (mouseX > -500) {
+            const dx = (baseX + offsetX) - mouseX;
+            const dy = (baseY + offsetY) - mouseY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const maxDist = 160;
+            if (dist < maxDist) {
+              const factor = (1 - dist / maxDist);
+              mouseDistOffset = -Math.sin(factor * Math.PI) * 10;
+              mouseAlphaBoost = factor * (isDark ? 0.35 : 0.3);
+            }
+          }
+
+          const posX = baseX + offsetX;
+          const posY = baseY + offsetY + mouseDistOffset;
+
+          // Dynamic radius & opacity based on wave crests
+          const baseRadius = isDark ? 1.2 : 1.25;
+          const radius = Math.max(0.7, baseRadius + combinedWave * 0.45 + (mouseAlphaBoost > 0 ? 0.4 : 0));
+
+          let alpha;
+          if (isDark) {
+            alpha = 0.06 + (combinedWave + 1) * 0.08 + mouseAlphaBoost;
+          } else {
+            alpha = 0.08 + (combinedWave + 1) * 0.09 + mouseAlphaBoost;
+          }
+
+          ctx.beginPath();
+          ctx.arc(posX, posY, radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha.toFixed(3)})`;
+          ctx.fill();
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(render);
+    }
+
+    animationFrameId = requestAnimationFrame(render);
+  }
+
+  // Initial QR Code rendering & Background Wave Init
   generateQR(false);
   renderHistory();
+  initBackgroundWaveCanvas();
 });
