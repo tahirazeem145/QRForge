@@ -41,12 +41,24 @@
   --card-glow-edge: rgba(255, 255, 255, 0.95);
   --card-glow-blur: 14px;
 
+  /* Rotating Border Glow Tokens - Light Mode */
+  --border-beam-color: #6366f1;
+  --border-beam-core: #ffffff;
+  --border-beam-trail: rgba(99, 102, 241, 0.25);
+
   /* n8n Canvas Dot Grid & Ambient Aura Tokens - Light Mode */
   --grid-dot: rgba(15, 23, 42, 0.06);
   --aura-top-primary: rgba(99, 102, 241, 0.07);
   --aura-accent-coral: rgba(255, 109, 90, 0.04);
   --aura-accent-indigo: rgba(79, 70, 229, 0.04);
   --header-bg: rgba(255, 255, 255, 0.85);
+}
+
+/* Custom Property definition for smooth 360deg border angle animation */
+@property --border-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
 }
 
 [data-theme="dark"] {
@@ -73,6 +85,11 @@
   --card-glow-ambient: rgba(255, 255, 255, 0.05);
   --card-glow-edge: rgba(255, 255, 255, 0.3);
   --card-glow-blur: 20px;
+
+  /* Rotating Border Glow Tokens - Dark Mode */
+  --border-beam-color: #818cf8;
+  --border-beam-core: #ffffff;
+  --border-beam-trail: rgba(129, 140, 248, 0.3);
 
   /* n8n Canvas Dot Grid & Ambient Aura Tokens - Dark Mode */
   --grid-dot: rgba(255, 255, 255, 0.08);
@@ -268,7 +285,7 @@ body::before {
   align-items: start;
 }
 
-/* Cards Common & Inner Moving White Glow */
+/* Cards Common, Rotating Border Glow & Inner Moving White Glow */
 .card,
 .feature-card,
 .history-card,
@@ -276,6 +293,21 @@ body::before {
   position: relative;
   overflow: hidden;
   isolation: isolate;
+  border: 1.5px solid transparent;
+  background: 
+    linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+    conic-gradient(
+      from var(--border-angle),
+      var(--border-color) 0deg,
+      var(--border-color) 240deg,
+      var(--border-beam-trail) 280deg,
+      var(--border-beam-color) 325deg,
+      var(--border-beam-core) 345deg,
+      var(--border-beam-color) 355deg,
+      var(--border-color) 360deg
+    ) border-box;
+  animation: rotateBorderBeam 4.5s linear infinite;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 /* Maintain proper stacking for all children elements above the inner glow */
@@ -352,14 +384,21 @@ body::before {
   }
 }
 
-/* Cards Base */
+/* Rotating 360deg Border Glow Animation */
+@keyframes rotateBorderBeam {
+  0% {
+    --border-angle: 0deg;
+  }
+  100% {
+    --border-angle: 360deg;
+  }
+}
+
+/* Cards Base Layout */
 .card {
-  background-color: var(--bg-card);
-  border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   padding: 1.75rem;
   box-shadow: var(--shadow-md);
-  transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
 .card-header {
@@ -692,8 +731,6 @@ body::before {
 }
 
 .history-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 1.25rem;
   display: flex;
@@ -705,7 +742,6 @@ body::before {
 
 .history-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--primary-light);
   transform: translateY(-2px);
 }
 
@@ -791,8 +827,6 @@ body::before {
 .empty-state {
   text-align: center;
   padding: 3.5rem 1.5rem;
-  background: var(--bg-card);
-  border: 1px dashed var(--border-color);
   border-radius: var(--radius-lg);
   grid-column: 1 / -1;
 }
@@ -839,8 +873,6 @@ body::before {
 }
 
 .feature-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   padding: 2rem 1.5rem;
   text-align: center;
