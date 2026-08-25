@@ -294,6 +294,8 @@ body::before {
   overflow: hidden;
   isolation: isolate;
   border: 1.5px solid transparent;
+  cursor: grab;
+  touch-action: none;
   background: 
     linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
     conic-gradient(
@@ -313,7 +315,40 @@ body::before {
       var(--border-color) 360deg
     ) border-box;
   animation: rotateBorderBeam 4s linear infinite;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  will-change: transform;
+}
+
+.is-floating-drag {
+  cursor: grabbing !important;
+  box-shadow: var(--shadow-lg), 0 20px 45px -10px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Guard interactive controls inside draggable cards */
+.card input,
+.card textarea,
+.card select,
+.card button,
+.card a,
+.card label,
+.card .type-tab,
+.card .preset-chip,
+.card .range-slider,
+.card .color-picker-input,
+.history-btn {
+  cursor: auto;
+}
+
+.card button,
+.card a,
+.card .type-tab,
+.card .preset-chip,
+.history-btn {
+  cursor: pointer !important;
+}
+
+.card input,
+.card textarea {
+  cursor: text !important;
 }
 
 /* Maintain proper stacking for all children elements above the inner glow */

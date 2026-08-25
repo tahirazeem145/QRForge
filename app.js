@@ -628,8 +628,364 @@ document.addEventListener('DOMContentLoaded', () => {
     animationFrameId = requestAnimationFrame(render);
   }
 
-  // Initial QR Code rendering & Background Wave Init
+  // --- Zero-Gravity Draggable Floating Cards Engine (Collision-Aware & Smooth) ---
+  function initZeroGravityCards() {
+    const cardsState = new Map();
+    let topZIndex = 10;
+    let activeCard = null;
+    let startPointerX = 0;
+    let startPointerY = 0;
+    let cardStartOffsetX = 0;
+    let cardStartOffsetY = 0;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    let lastPointerTime = 0;
+    let velX = 0;
+    let velY = 0;
+
+    function registerCard(cardEl) {
+      if (!cardEl || cardsState.has(cardEl)) return;
+
+      const rect = cardEl.getBoundingClientRect();
+      const state = {
+        el: cardEl,
+        x: 0,
+        y: 0,
+        targetX: 0,
+        targetY: 0,
+        renderX: 0,
+        renderY: 0,
+        vx: 0,
+        vy: 0,
+        rotation: 0,
+        targetRot: 0,
+        renderRot: 0,
+        vRot: 0,
+        seed: Math.random() * 100 + 1,
+        isDragging: false,
+        zIndex: topZIndex,
+        baseLeft: rect.left + window.scrollX,
+        baseTop: rect.top + window.scrollY,
+        width: rect.width,
+        height: rect.height
+      };
+
+      cardsState.set(cardEl, state);
+
+      cardEl.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+        // Prevent dragging when clicking interactive elements
+        const isInteractive = e.target.closest(
+          'input, textarea, select, button, a, label, .range-slider, .color-picker-input, .type-tab, .preset-chip, canvas, .history-btn, .checkbox-group'
+        );
+        if (isInteractive) return;
+
+        // Refresh layout positions before drag
+        updateCardMetrics();
+
+        activeCard = state;
+        state.isDragging = true;
+        state.vx = 0;
+        state.vy = 0;
+        state.vRot = 0;
+
+        topZIndex += 1;
+        state.zIndex = topZIndex;
+        cardEl.style.zIndex = topZIndex;
+        cardEl.classList.add('is-floating-drag');
+
+        startPointerX = e.clientX;
+        startPointerY = e.clientY;
+        cardStartOffsetX = state.x;
+        cardStartOffsetY = state.y;
+        state.targetX = state.x;
+        state.targetY = state.y;
+        state.targetRot = 0;
+
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
+        lastPointerTime = performance.now();
+        velX = 0;
+        velY = 0;
+
+        cardEl.setPointerCapture(e.pointerId);
+      });
+
+      cardEl.addEventListener('pointermove', (e) => {
+        if (!state.isDragging || activeCard !== state) return;
+
+        const now = performance.now();
+        const dt = Math.max(1, now - lastPointerTime);
+
+        // Smooth target assignment (prevents frame fighting and jitter)
+        state.targetX = cardStartOffsetX + (e.clientX - startPointerX);
+        state.targetY = cardStartOffsetY + (e.clientY - startPointerY);
+
+        const moveDx = e.clientX - lastPointerX;
+        const moveDy = e.clientY - lastPointerY;
+        velX = (moveDx / dt) * 16.6;
+        velY = (moveDy / dt) * 16.6;
+
+        // Gentle tilt based on drag speed
+        state.targetRot = Math.max(-8, Math.min(8, velX * 0.35));
+
+        lastPointerX = e.clientX;
+        lastPointerY = e.clientY;
+        lastPointerTime = now;
+      });
+
+      const endDrag = (e) => {
+        if (!state.isDragging || activeCard !== state) return;
+        state.isDragging = false;
+        activeCard = null;
+        cardEl.classList.remove('is-floating-drag');
+
+        // Apply release momentum with safe velocity caps
+        state.vx = Math.max(-20, Math.min(20, velX));
+        state.vy = Math.max(-20, Math.min(20, velY));
+        state.vRot = Math.max(-1.2, Math.min(1.2, velX * 0.07));
+
+        try {
+          cardEl.releasePointerCapture(e.pointerId);
+        } catch (err) {}
+      };
+
+      cardEl.addEventListener('pointerup', endDrag);
+      cardEl.addEventListener('pointercancel', endDrag);
+
+      // Smooth double-click to float card back to natural position
+      cardEl.addEventListener('dblclick', (e) => {
+        const isInteractive = e.target.closest('input, textarea, select, button, a, label');
+        if (isInteractive) return;
+        state.vx = 0;
+        state.vy = 0;
+        state.vRot = 0;
+        state.targetX = 0;
+        state.targetY = 0;
+        state.targetRot = 0;
+      });
+    }
+
+    function updateCardMetrics() {
+      cardsState.forEach((state) => {
+        if (!state.el.isConnected) return;
+        const prevTransform = state.el.style.transform;
+        state.el.style.transform = 'none';
+        const rect = state.el.getBoundingClientRect();
+        state.baseLeft = rect.left + window.scrollX;
+        state.baseTop = rect.top + window.scrollY;
+        state.width = rect.width;
+        state.height = rect.height;
+        state.el.style.transform = prevTransform;
+      });
+    }
+
+    // Initial Registration
+    document.querySelectorAll('.card, .feature-card, .history-card, .empty-state').forEach(registerCard);
+    setTimeout(updateCardMetrics, 100);
+    window.addEventListener('resize', updateCardMetrics, { passive: true });
+
+    // Dynamic Observer for dynamically added cards
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.card, .feature-card, .history-card, .empty-state').forEach(registerCard);
+      updateCardMetrics();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // Non-overlapping collision detection & repulsion
+    function resolveCollisions() {
+      const cards = Array.from(cardsState.values()).filter(s => s.el.isConnected);
+      const gap = 16; // Minimum padding between cards
+
+      for (let i = 0; i < cards.length; i++) {
+        for (let j = i + 1; j < cards.length; j++) {
+          const a = cards[i];
+          const b = cards[j];
+
+          const ax = a.baseLeft + a.x + a.width / 2;
+          const ay = a.baseTop + a.y + a.height / 2;
+          const bx = b.baseLeft + b.x + b.width / 2;
+          const by = b.baseTop + b.y + b.height / 2;
+
+          const halfW = (a.width + b.width) / 2 + gap;
+          const halfH = (a.height + b.height) / 2 + gap;
+
+          const diffX = bx - ax;
+          const diffY = by - ay;
+
+          const overlapX = halfW - Math.abs(diffX);
+          const overlapY = halfH - Math.abs(diffY);
+
+          if (overlapX > 0 && overlapY > 0) {
+            // Push along shallowest penetration axis
+            if (overlapX < overlapY) {
+              const sign = diffX >= 0 ? 1 : -1;
+              if (a.isDragging && !b.isDragging) {
+                b.x += sign * overlapX * 0.75;
+                b.targetX = b.x;
+                b.vx += sign * overlapX * 0.25;
+              } else if (b.isDragging && !a.isDragging) {
+                a.x -= sign * overlapX * 0.75;
+                a.targetX = a.x;
+                a.vx -= sign * overlapX * 0.25;
+              } else {
+                const push = overlapX * 0.5;
+                a.x -= sign * push;
+                b.x += sign * push;
+                a.targetX = a.x;
+                b.targetX = b.x;
+                a.vx -= sign * push * 0.12;
+                b.vx += sign * push * 0.12;
+              }
+            } else {
+              const sign = diffY >= 0 ? 1 : -1;
+              if (a.isDragging && !b.isDragging) {
+                b.y += sign * overlapY * 0.75;
+                b.targetY = b.y;
+                b.vy += sign * overlapY * 0.25;
+              } else if (b.isDragging && !a.isDragging) {
+                a.y -= sign * overlapY * 0.75;
+                a.targetY = a.y;
+                a.vy -= sign * overlapY * 0.25;
+              } else {
+                const push = overlapY * 0.5;
+                a.y -= sign * push;
+                b.y += sign * push;
+                a.targetY = a.y;
+                b.targetY = b.y;
+                a.vy -= sign * push * 0.12;
+                b.vy += sign * push * 0.12;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 60 FPS Physics & Motion Loop
+    function physicsTick(currentTime) {
+      const time = currentTime * 0.001;
+
+      cardsState.forEach((state) => {
+        if (!state.el.isConnected) {
+          cardsState.delete(state.el);
+          return;
+        }
+
+        if (state.isDragging) {
+          // Butter-smooth linear interpolation towards cursor (ZERO SHAKE)
+          state.isReturning = false;
+          state.x += (state.targetX - state.x) * 0.45;
+          state.y += (state.targetY - state.y) * 0.45;
+          state.rotation += (state.targetRot - state.rotation) * 0.25;
+          state.renderX = state.x;
+          state.renderY = state.y;
+          state.renderRot = state.rotation;
+        } else if (state.isReturning) {
+          // Smooth glide back to normal home position
+          state.x += (0 - state.x) * 0.12;
+          state.y += (0 - state.y) * 0.12;
+          state.rotation += (0 - state.rotation) * 0.12;
+          state.renderX = state.x;
+          state.renderY = state.y;
+          state.renderRot = state.rotation;
+
+          if (Math.abs(state.x) < 0.15 && Math.abs(state.y) < 0.15 && Math.abs(state.rotation) < 0.08) {
+            state.x = 0;
+            state.y = 0;
+            state.rotation = 0;
+            state.renderX = 0;
+            state.renderY = 0;
+            state.renderRot = 0;
+            state.isReturning = false;
+          }
+        } else {
+          // Zero-gravity momentum drift
+          state.x += state.vx;
+          state.y += state.vy;
+          state.rotation += state.vRot;
+
+          // Space air damping (gentle decay)
+          state.vx *= 0.94;
+          state.vy *= 0.94;
+          state.vRot *= 0.92;
+
+          if (Math.abs(state.vx) < 0.005) state.vx = 0;
+          if (Math.abs(state.vy) < 0.005) state.vy = 0;
+          if (Math.abs(state.vRot) < 0.005) state.vRot = 0;
+
+          // Soft boundary bounce to keep cards within view
+          const rect = state.el.getBoundingClientRect();
+          const pad = 20;
+          if (rect.left < pad && state.vx < 0) {
+            state.vx = -state.vx * 0.5;
+          }
+          if (rect.right > window.innerWidth - pad && state.vx > 0) {
+            state.vx = -state.vx * 0.5;
+          }
+          if (rect.top < pad && state.vy < 0) {
+            state.vy = -state.vy * 0.5;
+          }
+          if (rect.bottom > window.innerHeight - pad && state.vy > 0) {
+            state.vy = -state.vy * 0.5;
+          }
+
+          // Gentle ambient float when resting
+          if (Math.abs(state.vx) < 0.1 && Math.abs(state.vy) < 0.1) {
+            const ambientY = Math.sin(time * 1.5 + state.seed) * 2.5;
+            const ambientX = Math.cos(time * 1.1 + state.seed) * 1.8;
+            const ambientRot = Math.sin(time * 0.8 + state.seed) * 0.4;
+            state.renderX = state.x + ambientX;
+            state.renderY = state.y + ambientY;
+            state.renderRot = state.rotation + ambientRot;
+          } else {
+            state.renderX = state.x;
+            state.renderY = state.y;
+            state.renderRot = state.rotation;
+          }
+        }
+      });
+
+      // Resolve non-overlap collisions between all cards
+      resolveCollisions();
+
+      // Apply sub-pixel smooth transforms
+      cardsState.forEach((state) => {
+        state.el.style.transform = `translate3d(${state.renderX.toFixed(2)}px, ${state.renderY.toFixed(2)}px, 0) rotate(${state.renderRot.toFixed(2)}deg)`;
+      });
+
+      requestAnimationFrame(physicsTick);
+    }
+
+    // Function to smoothly reset all cards to original layout
+    function resetAllCardsToHome() {
+      cardsState.forEach((state) => {
+        state.isDragging = false;
+        state.vx = 0;
+        state.vy = 0;
+        state.vRot = 0;
+        state.targetX = 0;
+        state.targetY = 0;
+        state.targetRot = 0;
+        state.isReturning = true;
+      });
+
+      showToast('All cards smoothly restored to normal layout', 'grid');
+    }
+
+    // Top Header Reset Button Listener
+    const resetCardsBtn = document.getElementById('resetCardsBtn');
+    if (resetCardsBtn) {
+      resetCardsBtn.addEventListener('click', resetAllCardsToHome);
+    }
+
+    requestAnimationFrame(physicsTick);
+  }
+
+  // Initial QR Code rendering, Background Wave & Zero-Gravity Init
   generateQR(false);
   renderHistory();
   initBackgroundWaveCanvas();
+  initZeroGravityCards();
 });
