@@ -764,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         state.targetX = 0;
         state.targetY = 0;
         state.targetRot = 0;
+        state.isReturning = true;
       });
     }
 
@@ -883,15 +884,15 @@ document.addEventListener('DOMContentLoaded', () => {
           state.renderY = state.y;
           state.renderRot = state.rotation;
         } else if (state.isReturning) {
-          // Smooth glide back to normal home position
-          state.x += (0 - state.x) * 0.12;
-          state.y += (0 - state.y) * 0.12;
-          state.rotation += (0 - state.rotation) * 0.12;
+          // Slow, graceful zero-gravity glide back to normal home position
+          state.x += (0 - state.x) * 0.042;
+          state.y += (0 - state.y) * 0.042;
+          state.rotation += (0 - state.rotation) * 0.042;
           state.renderX = state.x;
           state.renderY = state.y;
           state.renderRot = state.rotation;
 
-          if (Math.abs(state.x) < 0.15 && Math.abs(state.y) < 0.15 && Math.abs(state.rotation) < 0.08) {
+          if (Math.abs(state.x) < 0.1 && Math.abs(state.y) < 0.1 && Math.abs(state.rotation) < 0.05) {
             state.x = 0;
             state.y = 0;
             state.rotation = 0;
