@@ -34,6 +34,12 @@
 
   --transition-fast: 0.15s ease;
   --transition-normal: 0.25s ease;
+
+  /* Card Inner Moving Glow - White Shade */
+  --card-glow-color: rgba(255, 255, 255, 0.75);
+  --card-glow-ambient: rgba(255, 255, 255, 0.25);
+  --card-glow-edge: rgba(255, 255, 255, 0.9);
+  --card-glow-blur: 16px;
 }
 
 [data-theme="dark"] {
@@ -54,6 +60,12 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+
+  /* Card Inner Moving Glow - White Shade in Dark Mode */
+  --card-glow-color: rgba(255, 255, 255, 0.18);
+  --card-glow-ambient: rgba(255, 255, 255, 0.05);
+  --card-glow-edge: rgba(255, 255, 255, 0.3);
+  --card-glow-blur: 20px;
 }
 
 /* Reset & Base */
@@ -208,7 +220,91 @@ body {
   align-items: start;
 }
 
-/* Cards */
+/* Cards Common & Inner Moving White Glow */
+.card,
+.feature-card,
+.history-card,
+.empty-state {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Maintain proper stacking for all children elements above the inner glow */
+.card > *,
+.feature-card > *,
+.history-card > *,
+.empty-state > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Moving Inner White Glow Pseudo-elements (sweeps left-to-right and right-to-left) */
+.card::before,
+.feature-card::before,
+.history-card::before,
+.empty-state::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -80%;
+  width: 75%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--card-glow-ambient) 25%,
+    var(--card-glow-color) 50%,
+    var(--card-glow-ambient) 75%,
+    transparent 100%
+  );
+  transform: rotate(25deg);
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(var(--card-glow-blur));
+  will-change: transform, opacity;
+  animation: cardInnerGlowSweep 6.5s ease-in-out infinite alternate;
+}
+
+.card::after,
+.feature-card::after,
+.history-card::after,
+.empty-state::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: -60%;
+  width: 50%;
+  height: 80%;
+  background: radial-gradient(
+    ellipse at center,
+    var(--card-glow-edge) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 75%
+  );
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(24px);
+  opacity: 0.7;
+  will-change: transform, opacity;
+  animation: cardInnerGlowSweep 6.5s ease-in-out infinite alternate;
+}
+
+@keyframes cardInnerGlowSweep {
+  0% {
+    transform: translateX(0%) rotate(25deg);
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateX(340%) rotate(25deg);
+    opacity: 0.3;
+  }
+}
+
+/* Cards Base */
 .card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
