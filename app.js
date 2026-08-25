@@ -581,15 +581,15 @@ document.addEventListener('DOMContentLoaded', () => {
           const posY = baseY + offsetY + mouseDistOffset;
 
           // Dynamic radius based on wave crests
-          const baseRadius = isDark ? 1.15 : 1.05;
-          const radius = Math.max(0.6, baseRadius + combinedWave * 0.35 + (mouseAlphaBoost > 0 ? 0.35 : 0));
+          const baseRadius = isDark ? 1.35 : 1.15;
+          const radius = Math.max(0.7, baseRadius + combinedWave * 0.45 + (mouseAlphaBoost > 0 ? 0.4 : 0));
 
-          // Refined opacity: clean, subtle, non-intrusive
+          // Brighter, refined opacity for clear dot wave presence
           let alpha;
           if (isDark) {
-            alpha = 0.055 + (combinedWave + 1) * 0.075 + mouseAlphaBoost;
+            alpha = 0.12 + (combinedWave + 1) * 0.13 + mouseAlphaBoost;
           } else {
-            alpha = 0.04 + (combinedWave + 1) * 0.045 + mouseAlphaBoost;
+            alpha = 0.08 + (combinedWave + 1) * 0.085 + mouseAlphaBoost;
           }
 
           ctx.beginPath();
