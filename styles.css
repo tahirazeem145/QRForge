@@ -40,6 +40,13 @@
   --card-glow-ambient: rgba(255, 255, 255, 0.25);
   --card-glow-edge: rgba(255, 255, 255, 0.9);
   --card-glow-blur: 16px;
+
+  /* n8n Canvas Dot Grid & Ambient Aura Tokens - Light Mode */
+  --grid-dot: rgba(15, 23, 42, 0.08);
+  --aura-top-primary: rgba(99, 102, 241, 0.09);
+  --aura-accent-coral: rgba(255, 109, 90, 0.06);
+  --aura-accent-indigo: rgba(79, 70, 229, 0.05);
+  --header-bg: rgba(255, 255, 255, 0.85);
 }
 
 [data-theme="dark"] {
@@ -66,6 +73,13 @@
   --card-glow-ambient: rgba(255, 255, 255, 0.05);
   --card-glow-edge: rgba(255, 255, 255, 0.3);
   --card-glow-blur: 20px;
+
+  /* n8n Canvas Dot Grid & Ambient Aura Tokens - Dark Mode */
+  --grid-dot: rgba(255, 255, 255, 0.08);
+  --aura-top-primary: rgba(99, 102, 241, 0.2);
+  --aura-accent-coral: rgba(255, 109, 90, 0.13);
+  --aura-accent-indigo: rgba(130, 71, 229, 0.15);
+  --header-bg: rgba(21, 28, 44, 0.85);
 }
 
 /* Reset & Base */
@@ -88,6 +102,28 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+/* n8n Style Fixed Canvas Dot Grid & Ambient Glowing Aura */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--bg-main);
+  background-image: 
+    radial-gradient(var(--grid-dot) 1.25px, transparent 1.25px),
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--aura-top-primary) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% 15%, var(--aura-accent-coral) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 35% at 15% 25%, var(--aura-accent-indigo) 0%, transparent 60%);
+  background-size: 24px 24px, 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, center top, right top, left top;
+  transition: background-color var(--transition-normal);
 }
 
 /* Container */
@@ -103,9 +139,10 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--bg-card);
+  background-color: var(--header-bg);
   border-bottom: 1px solid var(--border-color);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
@@ -825,7 +862,9 @@ body {
 .site-footer {
   margin-top: auto;
   border-top: 1px solid var(--border-color);
-  background: var(--bg-card);
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 2rem 0;
   text-align: center;
   font-size: 0.875rem;
