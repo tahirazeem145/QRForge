@@ -1226,11 +1226,176 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(updateWave);
   }
 
-  // Initial QR Code rendering, Background Wave, Zero-Gravity, Hero Wave & Scroll Reveal Init
+  // --- Progressive Web App (PWA) Install Manager ---
+  function initPWAInstallation() {
+    // 1. Register Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered successfully:', reg.scope);
+          })
+          .catch((err) => {
+            console.log('[PWA] Service Worker registration failed:', err);
+          });
+      });
+    }
+
+    let deferredPrompt = null;
+    const banner = document.getElementById('pwaInstallBanner');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const dismissBtn = document.getElementById('pwaDismissBtn');
+    const closeBtn = document.getElementById('pwaCloseBtn');
+    const headerInstallBtn = document.getElementById('headerInstallBtn');
+    const pwaTitle = document.getElementById('pwaTitle');
+    const pwaDesc = document.getElementById('pwaDesc');
+    const pwaDeviceIcon = document.getElementById('pwaDeviceIcon');
+    const pwaDeviceLabel = document.getElementById('pwaDeviceLabel');
+    const pwaInstallBtnText = document.getElementById('pwaInstallBtnText');
+
+    // Detect user platform
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+    const isAndroid = /android/i.test(ua);
+    const isMobile = isIOS || isAndroid || /Mobi|Tablet|iPad/i.test(ua);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    // If already installed, hide header button and don't prompt
+    if (isStandalone) {
+      if (headerInstallBtn) headerInstallBtn.classList.add('is-hidden');
+      return;
+    }
+
+    // Configure text and icons based on device
+    function configureDeviceContent() {
+      if (isIOS) {
+        if (pwaDeviceLabel) pwaDeviceLabel.textContent = 'iOS Web App';
+        if (pwaTitle) pwaTitle.textContent = 'Install QRForge on iPhone/iPad';
+        if (pwaDesc) pwaDesc.innerHTML = 'Tap the Share button <i data-feather="share"></i> in Safari and select <strong>"Add to Home Screen"</strong> for instant offline use.';
+        if (pwaInstallBtnText) pwaInstallBtnText.textContent = 'How to Install';
+        if (pwaDeviceIcon) pwaDeviceIcon.setAttribute('data-feather', 'smartphone');
+      } else if (isMobile) {
+        if (pwaDeviceLabel) pwaDeviceLabel.textContent = 'Mobile App';
+        if (pwaTitle) pwaTitle.textContent = 'Install QRForge on Mobile';
+        if (pwaDesc) pwaDesc.textContent = 'Add to your home screen for quick offline access and a full-screen native app experience.';
+        if (pwaInstallBtnText) pwaInstallBtnText.textContent = 'Install on Mobile';
+        if (pwaDeviceIcon) pwaDeviceIcon.setAttribute('data-feather', 'smartphone');
+      } else {
+        if (pwaDeviceLabel) pwaDeviceLabel.textContent = 'Desktop App';
+        if (pwaTitle) pwaTitle.textContent = 'Install QRForge on Desktop';
+        if (pwaDesc) pwaDesc.textContent = 'Install as a desktop app for fast launch directly from your taskbar or applications menu.';
+        if (pwaInstallBtnText) pwaInstallBtnText.textContent = 'Install on Desktop';
+        if (pwaDeviceIcon) pwaDeviceIcon.setAttribute('data-feather', 'monitor');
+      }
+      if (window.feather) feather.replace();
+    }
+
+    configureDeviceContent();
+
+    function showBanner() {
+      if (banner && !isStandalone) {
+        configureDeviceContent();
+        banner.classList.add('is-visible');
+        banner.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function hideBanner(rememberDismissal = false) {
+      if (banner) {
+        banner.classList.remove('is-visible');
+        banner.setAttribute('aria-hidden', 'true');
+      }
+      if (rememberDismissal) {
+        localStorage.setItem('pwa_prompt_dismissed_time', Date.now().toString());
+      }
+    }
+
+    // Check if dismissed recently (within 12 hours)
+    function shouldShowAutoPrompt() {
+      const dismissedTime = localStorage.getItem('pwa_prompt_dismissed_time');
+      if (!dismissedTime) return true;
+      const elapsed = Date.now() - parseInt(dismissedTime, 10);
+      return elapsed > 12 * 60 * 60 * 1000;
+    }
+
+    // Intercept native beforeinstallprompt (Chrome / Edge / Android)
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      if (headerInstallBtn) headerInstallBtn.classList.remove('is-hidden');
+
+      if (shouldShowAutoPrompt()) {
+        setTimeout(showBanner, 1200);
+      }
+    });
+
+    // For browsers where beforeinstallprompt doesn't fire immediately (or Safari), show initial prompt after 1.6s
+    if (shouldShowAutoPrompt()) {
+      setTimeout(() => {
+        if (!isStandalone && banner && !banner.classList.contains('is-visible')) {
+          showBanner();
+        }
+      }, 1600);
+    }
+
+    // Trigger Install Action
+    async function handleInstallClick() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          showToast('Thank you for installing QRForge!', 'check');
+          if (headerInstallBtn) headerInstallBtn.classList.add('is-hidden');
+        }
+        deferredPrompt = null;
+        hideBanner(true);
+      } else if (isIOS) {
+        showToast('Tap the Safari Share button and select "Add to Home Screen"', 'info');
+        hideBanner(true);
+      } else {
+        showToast('Use your browser address bar (⊕ or install icon) to install QRForge.', 'download');
+        hideBanner(true);
+      }
+    }
+
+    if (installBtn) {
+      installBtn.addEventListener('click', handleInstallClick);
+    }
+
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => hideBanner(true));
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => hideBanner(true));
+    }
+
+    if (headerInstallBtn) {
+      headerInstallBtn.addEventListener('click', () => {
+        if (deferredPrompt) {
+          handleInstallClick();
+        } else {
+          configureDeviceContent();
+          showBanner();
+        }
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      hideBanner(true);
+      if (headerInstallBtn) headerInstallBtn.classList.add('is-hidden');
+      showToast('QRForge installed successfully!', 'check');
+      deferredPrompt = null;
+    });
+  }
+
+  // Initial QR Code rendering, Background Wave, Zero-Gravity, Hero Wave, Scroll Reveal & PWA Init
   generateQR(false);
   renderHistory();
   initBackgroundWaveCanvas();
   initZeroGravityCards();
   initHeroWaveText();
   initScrollReveal();
+  initPWAInstallation();
 });
