@@ -1,62 +1,83 @@
-// QRForge Service Worker for Offline Functionality & PWA Installability
-const CACHE_NAME = 'qrforge-cache-v1';
-const ASSETS_TO_CACHE = [
+// QRForge Service Worker for 100% Offline Functionality & PWA Installation
+const CACHE_NAME = 'qrforge-offline-v2';
+
+const OFFLINE_ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './qrcode.min.js',
+  './feather.min.js',
   './logo.svg',
-  './manifest.json',
-  'https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js'
+  './manifest.json'
 ];
 
-// Install Event
+// Install Event — Pre-cache all essential application files
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+      console.log('[Service Worker] Pre-caching offline assets...');
+      return cache.addAll(OFFLINE_ASSETS);
+    }).then(() => {
+      return self.skipWaiting();
+    })
   );
 });
 
-// Activate Event
+// Activate Event — Clean up old caches & take control immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log('[Service Worker] Removing deprecated cache:', key);
             return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      return self.clients.claim();
+    })
   );
 });
 
-// Fetch Event
+// Fetch Event — Cache-First Strategy for Ultra-Fast & Complete Offline Experience
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
-        // Fetch fresh copy in background
-        fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-          }
-        }).catch(() => {});
+        // If online, update cache in background (Stale-While-Revalidate)
+        if (navigator.onLine) {
+          fetch(event.request).then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
+            }
+          }).catch(() => {
+            // Ignore background fetch error when offline
+          });
+        }
         return cachedResponse;
       }
+
+      // If not in cache, fetch from network and store in cache
       return fetch(event.request).then((networkResponse) => {
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+        if (!networkResponse || networkResponse.status !== 200) {
           return networkResponse;
         }
         const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, responseToCache);
+        });
         return networkResponse;
+      }).catch(() => {
+        // Fallback for navigation requests when offline
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
       });
-    }).catch(() => caches.match('./index.html'))
+    })
   );
 });
