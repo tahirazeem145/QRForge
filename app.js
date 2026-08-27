@@ -249,86 +249,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams();
     if (options.id) params.set('id', options.id);
     if (options.img) params.set('img', options.img);
-    if (options.v) params.set('v', options.v);
     return `${origin}${path}?${params.toString()}`;
-  }  // Generate an ultra-compact micro image payload (strictly < 400 chars for 100% reliable QR encoding)
-  function generateMicroImagePayload(file, maxDimension = 48, quality = 0.28) {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > maxDimension) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            }
-          } else {
-            if (height > maxDimension) {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
-          }
-
-          canvas.width = Math.max(width, 1);
-          canvas.height = Math.max(height, 1);
-          const ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'medium';
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-          let data = canvas.toDataURL('image/jpeg', quality);
-          // Strip prefix "data:image/jpeg;base64," to save bytes
-          if (data.startsWith('data:image/jpeg;base64,')) {
-            data = data.substring('data:image/jpeg;base64,'.length);
-          }
-
-          // If still over 500 chars, scale down slightly
-          if (data.length > 500) {
-            const smallCanvas = document.createElement('canvas');
-            smallCanvas.width = 36;
-            smallCanvas.height = Math.max(Math.round((canvas.height * 36) / canvas.width), 1);
-            const smallCtx = smallCanvas.getContext('2d');
-            smallCtx.drawImage(canvas, 0, 0, smallCanvas.width, smallCanvas.height);
-            let smallData = smallCanvas.toDataURL('image/jpeg', 0.22);
-            if (smallData.startsWith('data:image/jpeg;base64,')) {
-              smallData = smallData.substring('data:image/jpeg;base64,'.length);
-            }
-            data = smallData;
-          }
-
-          resolve(data);
-        };
-        img.onerror = () => resolve(null);
-        img.src = e.target.result;
-      };
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
   }
 
-  // Upload image to free public image host with seamless local fallback
+  // Upload image to local IndexedDB and prepare instant QR link
   async function uploadAndProcessImage(file, imageId) {
     if (!file) return;
 
     isImageUploading = true;
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'block';
-    if (uploadStatusText) uploadStatusText.textContent = 'Syncing image for universal sharing...';
+    if (uploadStatusText) uploadStatusText.textContent = 'Saving image and generating QR code...';
 
-    // 1. Generate ultra-compact micro-payload for 100% offline cross-device QR scanning
-    let microPayload = null;
-    try {
-      microPayload = await generateMicroImagePayload(file, 48, 0.28);
-    } catch (err) {
-      console.warn('Micro-payload generation error:', err);
-    }
-
-    // 2. Immediately create offline-ready URL with embedded micro-payload and IndexedDB ID
-    uploadedImagePublicUrl = buildViewerUrl({ id: imageId, v: microPayload });
+    // 1. Create clean, lightweight QR code URL (~55 characters)
+    uploadedImagePublicUrl = buildViewerUrl({ id: imageId });
     clearErrors();
     generateQR(false);
 
@@ -336,42 +269,6 @@ document.addEventListener('DOMContentLoaded', () => {
       imageBadge.textContent = 'Ready (Offline)';
       imageBadge.style.background = 'var(--success-bg)';
       imageBadge.style.color = 'var(--success)';
-    }
-
-    // 3. If online, upload to cloud host in background for full-resolution remote viewing
-    if (navigator.onLine) {
-      try {
-        const formData = new FormData();
-        formData.append('key', '6d207e02198a847aa98d0a2a901485a5');
-        formData.append('action', 'upload');
-        formData.append('source', file);
-        formData.append('format', 'json');
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 9000);
-
-        const res = await fetch('https://freeimage.host/api/1/upload', {
-          method: 'POST',
-          body: formData,
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (res.ok) {
-          const json = await res.json();
-          if (json && json.image && json.image.url) {
-            uploadedImagePublicUrl = buildViewerUrl({ id: imageId, img: json.image.url, v: microPayload });
-            generateQR(false);
-            if (imageBadge) {
-              imageBadge.textContent = 'Ready & Shareable';
-              imageBadge.style.background = 'var(--success-bg)';
-              imageBadge.style.color = 'var(--success)';
-            }
-          }
-        }
-      } catch (err) {
-        console.log('Cloud sync skipped; using offline embedded payload:', err);
-      }
     }
 
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
@@ -518,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (uploadedImagePublicUrl) {
         data = uploadedImagePublicUrl;
       } else if (imageUrlInput && imageUrlInput.value.trim()) {
-        data = buildViewerUrl(imageUrlInput.value.trim());
+        data = buildViewerUrl({ img: imageUrlInput.value.trim() });
       } else {
         showError('imageGroup', 'Please upload an image or paste an image link.');
         return null;
