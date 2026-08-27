@@ -373,9 +373,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (imageUrlInput) {
     imageUrlInput.addEventListener('input', () => {
-      const val = imageUrlInput.value.trim();
+      let val = imageUrlInput.value.trim();
       if (val) {
-        uploadedImagePublicUrl = buildViewerUrl(val, false);
+        if (!val.match(/^https?:\/\//i)) {
+          val = 'https://' + val;
+        }
+        uploadedImagePublicUrl = val;
         if (imagePreviewCard) imagePreviewCard.style.display = 'none';
         if (imageDropzone) imageDropzone.style.display = 'flex';
         clearErrors();
@@ -412,10 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       data = val;
     } else if (currentType === 'image') {
-      if (uploadedImagePublicUrl) {
+      if (imageUrlInput && imageUrlInput.value.trim()) {
+        let val = imageUrlInput.value.trim();
+        if (!val.match(/^https?:\/\//i)) {
+          val = 'https://' + val;
+        }
+        data = val;
+      } else if (uploadedImagePublicUrl) {
         data = uploadedImagePublicUrl;
-      } else if (imageUrlInput && imageUrlInput.value.trim()) {
-        data = buildViewerUrl({ img: imageUrlInput.value.trim() });
       } else {
         showError('imageGroup', 'Please upload an image or paste an image link.');
         return null;
