@@ -460,6 +460,201 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- Audio / Song QR Code State & Handlers ---
+  let uploadedAudioFile = null;
+  let uploadedAudioPublicUrl = null;
+  let isAudioUploading = false;
+
+  const audioFileInput = document.getElementById('audioFileInput');
+  const audioDropzone = document.getElementById('audioDropzone');
+  const audioPreviewCard = document.getElementById('audioPreviewCard');
+  const audioFileName = document.getElementById('audioFileName');
+  const audioFileSize = document.getElementById('audioFileSize');
+  const audioBadge = document.getElementById('audioBadge');
+  const audioPreviewPlayer = document.getElementById('audioPreviewPlayer');
+  const changeAudioBtn = document.getElementById('changeAudioBtn');
+  const removeAudioBtn = document.getElementById('removeAudioBtn');
+  const audioUploadProgressContainer = document.getElementById('audioUploadProgressContainer');
+  const audioUploadStatusText = document.getElementById('audioUploadStatusText');
+  const audioUrlInput = document.getElementById('audioUrlInput');
+
+  // Upload audio file to online public host & generate QR code for public link
+  async function uploadAndProcessAudio(file) {
+    if (!file) return;
+
+    isAudioUploading = true;
+    if (audioUploadProgressContainer) audioUploadProgressContainer.style.display = 'block';
+    if (audioUploadStatusText) audioUploadStatusText.textContent = 'Uploading song to public cloud host...';
+
+    let publicLink = null;
+
+    if (navigator.onLine) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file, file.name || 'song.mp3');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 35000); // 35s timeout for large audio files
+
+        const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.status === 'success' && json.data && json.data.url) {
+            publicLink = json.data.url;
+          }
+        }
+      } catch (err) {
+        console.warn('Audio upload warning:', err);
+      }
+    }
+
+    if (publicLink) {
+      uploadedAudioPublicUrl = publicLink;
+      if (audioUrlInput) audioUrlInput.value = publicLink;
+      if (audioBadge) {
+        audioBadge.textContent = 'Public Song Ready';
+        audioBadge.style.background = 'var(--success-bg)';
+        audioBadge.style.color = 'var(--success)';
+      }
+      clearErrors();
+      generateQR(false);
+      showToast('Song uploaded online! Audio QR code generated.', 'check');
+    } else {
+      const localUrl = URL.createObjectURL(file);
+      uploadedAudioPublicUrl = localUrl;
+      if (audioBadge) {
+        audioBadge.textContent = 'Offline Ready';
+        audioBadge.style.background = 'var(--success-bg)';
+        audioBadge.style.color = 'var(--success)';
+      }
+      clearErrors();
+      generateQR(false);
+      showToast('Audio QR code generated!', 'check');
+    }
+
+    if (audioUploadProgressContainer) audioUploadProgressContainer.style.display = 'none';
+    isAudioUploading = false;
+  }
+
+  async function handleAudioSelected(file) {
+    if (!file) return;
+
+    const validTypes = ['audio/mp3', 'audio/wav', 'audio/mpeg', 'audio/ogg', 'audio/aac', 'audio/m4a', 'audio/flac', 'audio/x-m4a', 'audio/mp4'];
+    const ext = file.name.split('.').pop().toLowerCase();
+    const validExts = ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'];
+
+    if (!file.type.startsWith('audio/') && !validTypes.includes(file.type) && !validExts.includes(ext)) {
+      showError('audioGroup', 'Please select a valid audio file (MP3, WAV, M4A, AAC, OGG, FLAC).');
+      return;
+    }
+
+    // Support up to 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      showError('audioGroup', 'Audio file is too large. Max allowed size is 50MB.');
+      return;
+    }
+
+    uploadedAudioFile = file;
+
+    // Display preview card immediately
+    if (audioFileName) audioFileName.textContent = file.name;
+    if (audioFileSize) {
+      const mb = (file.size / (1024 * 1024)).toFixed(2);
+      audioFileSize.textContent = mb >= 1 ? `${mb} MB` : `${(file.size / 1024).toFixed(1)} KB`;
+    }
+    if (audioPreviewPlayer) {
+      audioPreviewPlayer.src = URL.createObjectURL(file);
+    }
+    if (audioDropzone) audioDropzone.style.display = 'none';
+    if (audioPreviewCard) audioPreviewCard.style.display = 'flex';
+    if (audioUrlInput) audioUrlInput.value = '';
+
+    uploadAndProcessAudio(file);
+  }
+
+  // Audio Dropzone Listeners
+  if (audioDropzone) {
+    audioDropzone.addEventListener('click', () => {
+      if (audioFileInput) audioFileInput.click();
+    });
+
+    audioDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      audioDropzone.classList.add('is-dragover');
+    });
+
+    audioDropzone.addEventListener('dragleave', () => {
+      audioDropzone.classList.remove('is-dragover');
+    });
+
+    audioDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      audioDropzone.classList.remove('is-dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleAudioSelected(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (audioFileInput) {
+    audioFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleAudioSelected(e.target.files[0]);
+      }
+    });
+  }
+
+  if (changeAudioBtn) {
+    changeAudioBtn.addEventListener('click', () => {
+      if (audioFileInput) audioFileInput.click();
+    });
+  }
+
+  if (removeAudioBtn) {
+    removeAudioBtn.addEventListener('click', () => {
+      uploadedAudioFile = null;
+      uploadedAudioPublicUrl = null;
+      if (audioFileInput) audioFileInput.value = '';
+      if (audioPreviewPlayer) audioPreviewPlayer.src = '';
+      if (audioPreviewCard) audioPreviewCard.style.display = 'none';
+      if (audioDropzone) audioDropzone.style.display = 'flex';
+      if (audioUploadProgressContainer) audioUploadProgressContainer.style.display = 'none';
+      clearErrors();
+      generateQR(false);
+    });
+  }
+
+  if (audioUrlInput) {
+    const handleAudioUrlUpdate = () => {
+      let val = audioUrlInput.value.trim();
+      if (val) {
+        if (!val.match(/^https?:\/\//i)) {
+          val = 'https://' + val;
+        }
+        uploadedAudioPublicUrl = val;
+        if (audioPreviewCard) audioPreviewCard.style.display = 'none';
+        if (audioDropzone) audioDropzone.style.display = 'flex';
+        clearErrors();
+        generateQR(false);
+      } else {
+        uploadedAudioPublicUrl = null;
+        generateQR(false);
+      }
+    };
+
+    audioUrlInput.addEventListener('input', handleAudioUrlUpdate);
+    audioUrlInput.addEventListener('change', handleAudioUrlUpdate);
+    audioUrlInput.addEventListener('paste', () => {
+      setTimeout(handleAudioUrlUpdate, 50);
+    });
+  }
+
   const qrTargetPreview = document.getElementById('qrTargetPreview');
 
   if (imageUrlInput) {
@@ -523,6 +718,20 @@ document.addEventListener('DOMContentLoaded', () => {
         data = uploadedImagePublicUrl;
       } else {
         showError('imageGroup', 'Please upload an image or paste an image link.');
+        return null;
+      }
+    } else if (currentType === 'audio') {
+      const urlVal = audioUrlInput ? audioUrlInput.value.trim() : '';
+      if (urlVal) {
+        let clean = urlVal;
+        if (!clean.match(/^https?:\/\//i)) {
+          clean = 'https://' + clean;
+        }
+        data = clean;
+      } else if (uploadedAudioPublicUrl) {
+        data = uploadedAudioPublicUrl;
+      } else {
+        showError('audioGroup', 'Please upload a song or paste a direct audio link.');
         return null;
       }
     }
@@ -608,6 +817,16 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadedImageFile = null;
     uploadedImageDataUrl = null;
     uploadedImagePublicUrl = null;
+
+    if (audioFileInput) audioFileInput.value = '';
+    if (audioUrlInput) audioUrlInput.value = '';
+    if (audioPreviewPlayer) audioPreviewPlayer.src = '';
+    if (audioPreviewCard) audioPreviewCard.style.display = 'none';
+    if (audioDropzone) audioDropzone.style.display = 'flex';
+    if (audioUploadProgressContainer) audioUploadProgressContainer.style.display = 'none';
+    uploadedAudioFile = null;
+    uploadedAudioPublicUrl = null;
+
     clearErrors();
     generateQR(false);
     showToast('Form cleared', 'rotate-ccw');

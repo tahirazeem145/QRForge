@@ -122,6 +122,10 @@
                 <i data-feather="image" class="tab-icon"></i>
                 <span>Image</span>
               </button>
+              <button class="type-tab" data-type="audio" role="tab">
+                <i data-feather="music" class="tab-icon"></i>
+                <span>Audio</span>
+              </button>
             </div>
 
             <!-- Dynamic Input Forms Container -->
@@ -202,6 +206,67 @@
                   <input type="url" id="imageUrlInput" class="form-input" placeholder="https://example.com/photo.jpg">
                   <p class="form-helper">When scanned, this image will open instantly in full resolution on any phone or scanner.</p>
                   <p class="form-error">Please select an image file or enter an image link.</p>
+                </div>
+              </div>
+
+              <!-- 4. Audio / Song Form -->
+              <div class="form-type-content" id="form-audio" style="display: none;">
+                <div class="form-group" id="audioGroup">
+                  <label class="form-label">Upload Song or Audio to QR Code</label>
+                  
+                  <!-- Hidden Audio File Input -->
+                  <input type="file" id="audioFileInput" accept="audio/mp3, audio/wav, audio/mpeg, audio/ogg, audio/aac, audio/m4a, audio/flac, .mp3, .wav, .m4a, .aac, .ogg, .flac" style="display: none;">
+                  
+                  <!-- Drag & Drop Audio Upload Zone -->
+                  <div class="audio-dropzone" id="audioDropzone" role="button" tabindex="0" aria-label="Upload audio or song">
+                    <div class="audio-dropzone-icon">
+                      <i data-feather="music"></i>
+                    </div>
+                    <div class="audio-dropzone-text">
+                      <p class="dropzone-title">Click to upload song or drag & drop</p>
+                      <p class="dropzone-subtitle">MP3, WAV, AAC, M4A, OGG or FLAC (Up to 50MB)</p>
+                    </div>
+                  </div>
+
+                  <!-- Uploaded Audio Preview Card -->
+                  <div class="audio-preview-card" id="audioPreviewCard" style="display: none;">
+                    <div class="audio-preview-icon-wrap">
+                      <div class="audio-pulse-ring"></div>
+                      <i data-feather="disc" class="audio-disc-icon"></i>
+                    </div>
+                    <div class="audio-preview-info">
+                      <p class="audio-preview-name" id="audioFileName">song.mp3</p>
+                      <p class="audio-preview-meta">
+                        <span id="audioFileSize">0 MB</span>
+                        <span class="preview-badge" id="audioBadge">Ready</span>
+                      </p>
+                      <!-- Mini Audio Player -->
+                      <audio id="audioPreviewPlayer" controls class="audio-mini-player"></audio>
+                    </div>
+                    <div class="audio-preview-actions">
+                      <button type="button" class="icon-btn-sm" id="changeAudioBtn" title="Change Song">
+                        <i data-feather="refresh-cw"></i>
+                      </button>
+                      <button type="button" class="icon-btn-sm remove-btn" id="removeAudioBtn" title="Remove Audio">
+                        <i data-feather="trash-2"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Audio Upload Status / Progress Bar -->
+                  <div class="upload-progress-container" id="audioUploadProgressContainer" style="display: none;">
+                    <div class="upload-progress-bar" id="audioUploadProgressBar"></div>
+                    <p class="upload-status-text" id="audioUploadStatusText">Uploading song to public cloud host...</p>
+                  </div>
+
+                  <!-- Optional Direct Audio Link Input -->
+                  <div class="image-url-divider">
+                    <span>OR PASTE DIRECT AUDIO / SONG LINK</span>
+                  </div>
+                  
+                  <input type="url" id="audioUrlInput" class="form-input" placeholder="https://example.com/song.mp3">
+                  <p class="form-helper">When scanned, this song will stream and play instantly on any phone or device.</p>
+                  <p class="form-error">Please select an audio file or enter a song link.</p>
                 </div>
               </div>
 
