@@ -293,36 +293,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Upload image to local storage & generate direct image QR code
+  // Upload image to online public image host & generate QR code for public link
   async function uploadAndProcessImage(file, imageId) {
     if (!file) return;
 
     isImageUploading = true;
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'block';
-    if (uploadStatusText) uploadStatusText.textContent = 'Generating direct image QR code...';
+    if (uploadStatusText) uploadStatusText.textContent = 'Uploading to public image host...';
 
-    // 1. Generate direct image data URL (~700 chars)
-    let directDataUrl = null;
-    try {
-      directDataUrl = await generateDirectImageDataUrl(file, 64, 0.35);
-    } catch (err) {
-      console.warn('Direct image payload error:', err);
+    let publicLink = null;
+
+    // 1. Upload to online public host
+    if (navigator.onLine) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file, file.name || 'image.png');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 18000);
+
+        const res = await fetch('https://tmpfiles.org/api/v1/upload', {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.status === 'success' && json.data && json.data.url) {
+            publicLink = json.data.url;
+          }
+        }
+      } catch (uploadErr) {
+        console.warn('Online host upload error, falling back:', uploadErr);
+      }
     }
 
-    // 2. Set QR code data directly to the image data URL
-    uploadedImagePublicUrl = directDataUrl || buildViewerUrl({ id: imageId });
-    clearErrors();
-    generateQR(false);
-
-    if (imageBadge) {
-      imageBadge.textContent = 'Image Ready';
-      imageBadge.style.background = 'var(--success-bg)';
-      imageBadge.style.color = 'var(--success)';
+    // 2. If online host succeeded, set the public link in the input and generate QR code
+    if (publicLink) {
+      uploadedImagePublicUrl = publicLink;
+      if (imageUrlInput) imageUrlInput.value = publicLink;
+      if (imageBadge) {
+        imageBadge.textContent = 'Public Link Ready';
+        imageBadge.style.background = 'var(--success-bg)';
+        imageBadge.style.color = 'var(--success)';
+      }
+      clearErrors();
+      generateQR(false);
+      showToast('Image uploaded online! Public link QR code generated.', 'check');
+    } else {
+      // 3. Fallback: generate direct image payload or local viewer link
+      let directDataUrl = null;
+      try {
+        directDataUrl = await generateDirectImageDataUrl(file, 64, 0.35);
+      } catch (err) {
+        console.warn('Direct image payload error:', err);
+      }
+      uploadedImagePublicUrl = directDataUrl || buildViewerUrl({ id: imageId });
+      if (imageBadge) {
+        imageBadge.textContent = 'Offline Ready';
+        imageBadge.style.background = 'var(--success-bg)';
+        imageBadge.style.color = 'var(--success)';
+      }
+      clearErrors();
+      generateQR(false);
+      showToast('Image QR Code generated!', 'check');
     }
 
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
     isImageUploading = false;
-    showToast('Direct Image QR Code generated!', 'check');
   }
 
   async function handleImageSelected(file) {
