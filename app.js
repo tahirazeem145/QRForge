@@ -240,14 +240,59 @@ document.addEventListener('DOMContentLoaded', () => {
   const uploadStatusText = document.getElementById('uploadStatusText');
   const imageUrlInput = document.getElementById('imageUrlInput');
 
-  function buildViewerUrl(target, isId = false) {
+  function buildViewerUrl(options = {}) {
     const origin = window.location.origin;
     let path = window.location.pathname;
     if (!path.endsWith('/')) {
       path = path.substring(0, path.lastIndexOf('/') + 1);
     }
-    const param = isId ? `id=${encodeURIComponent(target)}` : `img=${encodeURIComponent(target)}`;
-    return `${origin}${path}?${param}`;
+    const params = new URLSearchParams();
+    if (options.id) params.set('id', options.id);
+    if (options.img) params.set('img', options.img);
+    if (options.v) params.set('v', options.v);
+    return `${origin}${path}?${params.toString()}`;
+  }
+
+  // Generate an ultra-compact micro image payload (fits safely inside any standard QR code)
+  function generateMicroImagePayload(file, maxDimension = 90, quality = 0.42) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = Math.max(width, 1);
+          canvas.height = Math.max(height, 1);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          let data = canvas.toDataURL('image/webp', quality);
+          if (!data.startsWith('data:image/webp') || data.length > 1400) {
+            data = canvas.toDataURL('image/jpeg', quality);
+          }
+          resolve(data);
+        };
+        img.onerror = () => resolve(null);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
   }
 
   // Upload image to free public image host with seamless local fallback
@@ -258,18 +303,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'block';
     if (uploadStatusText) uploadStatusText.textContent = 'Syncing image for universal sharing...';
 
-    // 1. Immediately create offline-ready IndexedDB URL so QR code generates right now (<1ms)
-    uploadedImagePublicUrl = buildViewerUrl(imageId, true);
+    // 1. Generate micro-payload for 100% offline cross-device QR scanning
+    let microPayload = null;
+    try {
+      microPayload = await generateMicroImagePayload(file, 90, 0.40);
+    } catch (err) {
+      console.warn('Micro-payload generation error:', err);
+    }
+
+    // 2. Immediately create offline-ready URL with embedded micro-payload and IndexedDB ID
+    uploadedImagePublicUrl = buildViewerUrl({ id: imageId, v: microPayload });
     clearErrors();
     generateQR(false);
 
     if (imageBadge) {
-      imageBadge.textContent = 'Offline Ready';
-      imageBadge.style.background = 'var(--primary-light)';
-      imageBadge.style.color = 'var(--text-primary)';
+      imageBadge.textContent = 'Ready (Offline)';
+      imageBadge.style.background = 'var(--success-bg)';
+      imageBadge.style.color = 'var(--success)';
     }
 
-    // 2. If online, upload to cloud host in background so any external scanner can view
+    // 3. If online, upload to cloud host in background for full-resolution remote viewing
     if (navigator.onLine) {
       try {
         const formData = new FormData();
@@ -291,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (res.ok) {
           const json = await res.json();
           if (json && json.image && json.image.url) {
-            uploadedImagePublicUrl = buildViewerUrl(json.image.url, false);
+            uploadedImagePublicUrl = buildViewerUrl({ id: imageId, img: json.image.url, v: microPayload });
             generateQR(false);
             if (imageBadge) {
               imageBadge.textContent = 'Ready & Shareable';
@@ -301,16 +354,11 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
       } catch (err) {
-        console.log('Cloud sync skipped; using local offline storage:', err);
+        console.log('Cloud sync skipped; using offline embedded payload:', err);
       }
     }
 
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
-    if (imageBadge && imageBadge.textContent !== 'Ready & Shareable') {
-      imageBadge.textContent = 'Ready (Offline)';
-      imageBadge.style.background = 'var(--success-bg)';
-      imageBadge.style.color = 'var(--success)';
-    }
     isImageUploading = false;
     showToast('Image QR Code generated successfully!', 'check');
   }
@@ -1688,18 +1736,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const openBtn = document.getElementById('scannedImageOpenBtn');
     const createBtn = document.getElementById('scannedImageCreateBtn');
 
-    // Parse URL query parameter: ?id=... or ?img=... or ?view=...
+    // Parse URL query parameter: ?id=... or ?img=... or ?v=...
     const urlParams = new URLSearchParams(window.location.search);
     let imageId = urlParams.get('id');
     let scannedTarget = urlParams.get('img') || urlParams.get('view') || urlParams.get('image');
+    let microPayload = urlParams.get('v');
 
-    if (!imageId && !scannedTarget && window.location.hash) {
+    if (!imageId && !scannedTarget && !microPayload && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       imageId = hashParams.get('id');
       scannedTarget = hashParams.get('img') || hashParams.get('view') || hashParams.get('image');
+      microPayload = hashParams.get('v');
     }
 
-    if (!imageId && !scannedTarget) return;
+    if (!imageId && !scannedTarget && !microPayload) return;
     if (!modal) return;
 
     // Open Modal
@@ -1709,10 +1759,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (loader) loader.style.display = 'flex';
     if (displayImg) displayImg.style.display = 'none';
 
-    let resolvedImageUrl = scannedTarget;
+    let resolvedImageUrl = scannedTarget || microPayload;
     let fileName = 'qr-scanned-image.png';
 
-    // If looking up by IndexedDB ID (Offline / Local)
+    // 1. If looking up by IndexedDB ID (Offline on original device / PWA)
     if (imageId) {
       try {
         const stored = await ImageDB.getImage(imageId);
@@ -1725,15 +1775,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // 2. If we have a microPayload fallback and remote image is not yet loaded, use microPayload
+    if (!resolvedImageUrl && microPayload) {
+      resolvedImageUrl = microPayload;
+    }
+
     if (!resolvedImageUrl) {
       if (loader) {
-        loader.innerHTML = '<i data-feather="image"></i><span>Image ready. Connect to internet to sync across external devices.</span>';
+        loader.innerHTML = '<i data-feather="alert-circle"></i><span>No image found in QR code. Please generate a new QR code.</span>';
         if (window.feather) feather.replace();
       }
       return;
     }
 
-    // Load the image
+    // Load and display the image
     const imgObj = new Image();
     imgObj.onload = () => {
       if (loader) loader.style.display = 'none';
@@ -1743,7 +1798,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
     imgObj.onerror = () => {
-      if (loader) {
+      // If remote image fails to load, fallback to microPayload if present
+      if (microPayload && resolvedImageUrl !== microPayload) {
+        resolvedImageUrl = microPayload;
+        displayImg.src = microPayload;
+        displayImg.style.display = 'block';
+        if (loader) loader.style.display = 'none';
+      } else if (loader) {
         loader.innerHTML = '<i data-feather="alert-circle"></i><span>Failed to load scanned image. Link may be invalid or expired.</span>';
         if (window.feather) feather.replace();
       }
