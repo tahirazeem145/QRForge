@@ -118,6 +118,10 @@
                 <i data-feather="file-text" class="tab-icon"></i>
                 <span>Text</span>
               </button>
+              <button class="type-tab" data-type="image" role="tab">
+                <i data-feather="image" class="tab-icon"></i>
+                <span>Image</span>
+              </button>
             </div>
 
             <!-- Dynamic Input Forms Container -->
@@ -140,6 +144,64 @@
                   <textarea id="textInput" class="form-textarea" placeholder="Type any text or message here..."></textarea>
                   <p class="form-helper">Enter plain text, notes, or message content.</p>
                   <p class="form-error">Please enter text to encode.</p>
+                </div>
+              </div>
+
+              <!-- 3. Image Form -->
+              <div class="form-type-content" id="form-image" style="display: none;">
+                <div class="form-group" id="imageGroup">
+                  <label class="form-label">Upload Image to QR Code</label>
+                  
+                  <!-- Hidden File Input -->
+                  <input type="file" id="imageFileInput" accept="image/png, image/jpeg, image/webp, image/gif, image/svg+xml" style="display: none;">
+                  
+                  <!-- Drag & Drop Upload Zone -->
+                  <div class="image-dropzone" id="imageDropzone" role="button" tabindex="0" aria-label="Upload image">
+                    <div class="dropzone-icon">
+                      <i data-feather="upload-cloud"></i>
+                    </div>
+                    <div class="dropzone-text">
+                      <p class="dropzone-title">Click to upload or drag & drop</p>
+                      <p class="dropzone-subtitle">PNG, JPG, WEBP, GIF or SVG (Max 10MB)</p>
+                    </div>
+                  </div>
+
+                  <!-- Uploaded Image Preview Box (Hidden initially) -->
+                  <div class="image-preview-card" id="imagePreviewCard" style="display: none;">
+                    <div class="preview-thumbnail-wrap">
+                      <img id="imagePreviewImg" class="preview-thumb-img" alt="Uploaded Preview">
+                    </div>
+                    <div class="preview-info">
+                      <p class="preview-name" id="imageFileName">image.png</p>
+                      <p class="preview-meta">
+                        <span id="imageFileSize">0 KB</span>
+                        <span class="preview-badge" id="imageBadge">Ready</span>
+                      </p>
+                    </div>
+                    <div class="preview-actions">
+                      <button type="button" class="icon-btn-sm" id="changeImageBtn" title="Change Image">
+                        <i data-feather="refresh-cw"></i>
+                      </button>
+                      <button type="button" class="icon-btn-sm remove-btn" id="removeImageBtn" title="Remove Image">
+                        <i data-feather="trash-2"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Upload Status / Progress Bar -->
+                  <div class="upload-progress-container" id="uploadProgressContainer" style="display: none;">
+                    <div class="upload-progress-bar" id="uploadProgressBar"></div>
+                    <p class="upload-status-text" id="uploadStatusText">Preparing image...</p>
+                  </div>
+
+                  <!-- Optional Direct Image Link Input -->
+                  <div class="image-url-divider">
+                    <span>OR PASTE IMAGE LINK</span>
+                  </div>
+                  
+                  <input type="url" id="imageUrlInput" class="form-input" placeholder="https://example.com/photo.jpg">
+                  <p class="form-helper">When scanned, this image will open instantly in full resolution on any phone or scanner.</p>
+                  <p class="form-error">Please select an image file or enter an image link.</p>
                 </div>
               </div>
 
@@ -379,6 +441,58 @@
           <i data-feather="download"></i>
           <span id="pwaInstallBtnText">Install on Desktop</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanned Image Viewer Modal (Displayed when user scans an Image QR Code) -->
+  <div class="scanned-image-modal" id="scannedImageViewerModal" aria-hidden="true" role="dialog" aria-labelledby="scannedModalTitle">
+    <div class="scanned-modal-backdrop" id="scannedModalBackdrop"></div>
+    <div class="scanned-modal-dialog">
+      <div class="scanned-modal-header">
+        <div class="scanned-modal-brand">
+          <div class="scanned-badge">
+            <i data-feather="image"></i>
+            <span>Scanned QR Image</span>
+          </div>
+          <h2 class="scanned-modal-title" id="scannedModalTitle">Viewing Shared Image</h2>
+        </div>
+        <button class="scanned-modal-close" id="scannedImageCloseBtn" aria-label="Close image viewer" title="Close">
+          <i data-feather="x"></i>
+        </button>
+      </div>
+
+      <!-- Main Showcase Image Display -->
+      <div class="scanned-image-container">
+        <div class="scanned-image-loader" id="scannedImageLoader">
+          <div class="scanned-spinner"></div>
+          <span>Loading image...</span>
+        </div>
+        <img id="scannedImageDisplay" class="scanned-image-el" alt="Scanned Image Content" style="display: none;">
+      </div>
+
+      <!-- Scanned Image Actions -->
+      <div class="scanned-modal-footer">
+        <div class="scanned-footer-left">
+          <button class="btn btn-secondary" id="scannedImageCopyBtn" title="Copy Image Link">
+            <i data-feather="copy"></i>
+            <span>Copy Link</span>
+          </button>
+          <a id="scannedImageOpenBtn" class="btn btn-secondary" target="_blank" rel="noopener noreferrer" title="Open Full Image in New Tab">
+            <i data-feather="external-link"></i>
+            <span>Full Size</span>
+          </a>
+        </div>
+        <div class="scanned-footer-right">
+          <a id="scannedImageDownloadBtn" class="btn btn-primary" download="qr-scanned-image.png" title="Download to device">
+            <i data-feather="download"></i>
+            <span>Download Image</span>
+          </a>
+          <button class="btn btn-secondary" id="scannedImageCreateBtn" title="Create your own QR Code">
+            <i data-feather="plus"></i>
+            <span>Create QR</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

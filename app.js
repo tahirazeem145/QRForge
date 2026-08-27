@@ -166,6 +166,252 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // --- Image QR Code State & Handlers ---
+  let uploadedImageDataUrl = null;
+  let uploadedImagePublicUrl = null;
+  let uploadedImageFile = null;
+  let isImageUploading = false;
+
+  const imageFileInput = document.getElementById('imageFileInput');
+  const imageDropzone = document.getElementById('imageDropzone');
+  const imagePreviewCard = document.getElementById('imagePreviewCard');
+  const imagePreviewImg = document.getElementById('imagePreviewImg');
+  const imageFileName = document.getElementById('imageFileName');
+  const imageFileSize = document.getElementById('imageFileSize');
+  const imageBadge = document.getElementById('imageBadge');
+  const changeImageBtn = document.getElementById('changeImageBtn');
+  const removeImageBtn = document.getElementById('removeImageBtn');
+  const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+  const uploadStatusText = document.getElementById('uploadStatusText');
+  const imageUrlInput = document.getElementById('imageUrlInput');
+
+  function buildViewerUrl(imgTarget) {
+    const origin = window.location.origin;
+    let path = window.location.pathname;
+    if (!path.endsWith('/')) {
+      path = path.substring(0, path.lastIndexOf('/') + 1);
+    }
+    return `${origin}${path}?img=${encodeURIComponent(imgTarget)}`;
+  }
+
+  // Compress image to a compact Data URL for offline QR encoding
+  function compressImageToDataUrl(file, maxWidth = 280, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxWidth) {
+              width = Math.round((width * maxWidth) / height);
+              height = maxWidth;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Upload image to free public image host with fallback to compressed data URL
+  async function uploadAndProcessImage(file) {
+    if (!file) return;
+
+    isImageUploading = true;
+    if (uploadProgressContainer) uploadProgressContainer.style.display = 'block';
+    if (uploadStatusText) uploadStatusText.textContent = 'Uploading image for instant sharing...';
+    if (imageBadge) {
+      imageBadge.textContent = 'Uploading...';
+      imageBadge.style.background = 'var(--primary-light)';
+      imageBadge.style.color = 'var(--text-primary)';
+    }
+
+    try {
+      let hostedUrl = null;
+
+      // 1. Try public image upload (FreeImage.host API)
+      if (navigator.onLine) {
+        try {
+          const formData = new FormData();
+          formData.append('key', '6d207e02198a847aa98d0a2a901485a5');
+          formData.append('action', 'upload');
+          formData.append('source', file);
+          formData.append('format', 'json');
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 7000);
+
+          const res = await fetch('https://freeimage.host/api/1/upload', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (res.ok) {
+            const json = await res.json();
+            if (json && json.image && json.image.url) {
+              hostedUrl = json.image.url;
+            }
+          }
+        } catch (err) {
+          console.warn('Cloud upload skipped or timed out, using embedded compressed image:', err);
+        }
+      }
+
+      // 2. If offline or cloud upload was unavailable, generate compressed direct data viewer URL
+      if (!hostedUrl) {
+        hostedUrl = await compressImageToDataUrl(file, 260, 0.58);
+      }
+
+      uploadedImagePublicUrl = buildViewerUrl(hostedUrl);
+
+      if (imageBadge) {
+        imageBadge.textContent = 'Ready & Shareable';
+        imageBadge.style.background = 'var(--success-bg)';
+        imageBadge.style.color = 'var(--success)';
+      }
+      if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
+
+      clearErrors();
+      generateQR(false);
+      showToast('Image QR Code generated successfully!', 'check');
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
+      if (imageBadge) {
+        imageBadge.textContent = 'Error';
+        imageBadge.style.background = 'var(--danger-bg)';
+        imageBadge.style.color = 'var(--danger)';
+      }
+      showError('imageGroup', 'Failed to process image. Please try another image.');
+    } finally {
+      isImageUploading = false;
+    }
+  }
+
+  function handleImageSelected(file) {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('imageGroup', 'Please select a valid image file (PNG, JPG, WEBP, GIF, SVG).');
+      return;
+    }
+
+    if (file.size > 12 * 1024 * 1024) {
+      showError('imageGroup', 'File is too large. Max allowed size is 10MB.');
+      return;
+    }
+
+    uploadedImageFile = file;
+
+    // Display preview thumbnail immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      uploadedImageDataUrl = e.target.result;
+      if (imagePreviewImg) imagePreviewImg.src = uploadedImageDataUrl;
+      if (imageFileName) imageFileName.textContent = file.name;
+      if (imageFileSize) {
+        const kb = (file.size / 1024).toFixed(1);
+        imageFileSize.textContent = kb > 1024 ? (kb / 1024).toFixed(2) + ' MB' : kb + ' KB';
+      }
+      if (imageDropzone) imageDropzone.style.display = 'none';
+      if (imagePreviewCard) imagePreviewCard.style.display = 'flex';
+      if (imageUrlInput) imageUrlInput.value = '';
+
+      uploadAndProcessImage(file);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Image Dropzone Listeners
+  if (imageDropzone) {
+    imageDropzone.addEventListener('click', () => {
+      if (imageFileInput) imageFileInput.click();
+    });
+
+    imageDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      imageDropzone.classList.add('is-dragover');
+    });
+
+    imageDropzone.addEventListener('dragleave', () => {
+      imageDropzone.classList.remove('is-dragover');
+    });
+
+    imageDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      imageDropzone.classList.remove('is-dragover');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageSelected(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  if (imageFileInput) {
+    imageFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageSelected(e.target.files[0]);
+      }
+    });
+  }
+
+  if (changeImageBtn) {
+    changeImageBtn.addEventListener('click', () => {
+      if (imageFileInput) imageFileInput.click();
+    });
+  }
+
+  if (removeImageBtn) {
+    removeImageBtn.addEventListener('click', () => {
+      uploadedImageFile = null;
+      uploadedImageDataUrl = null;
+      uploadedImagePublicUrl = null;
+      if (imageFileInput) imageFileInput.value = '';
+      if (imagePreviewCard) imagePreviewCard.style.display = 'none';
+      if (imageDropzone) imageDropzone.style.display = 'flex';
+      if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
+      clearErrors();
+      generateQR(false);
+    });
+  }
+
+  if (imageUrlInput) {
+    imageUrlInput.addEventListener('input', () => {
+      const val = imageUrlInput.value.trim();
+      if (val) {
+        uploadedImagePublicUrl = buildViewerUrl(val);
+        if (imagePreviewCard) imagePreviewCard.style.display = 'none';
+        if (imageDropzone) imageDropzone.style.display = 'flex';
+        clearErrors();
+        generateQR(false);
+      } else {
+        uploadedImagePublicUrl = null;
+        generateQR(false);
+      }
+    });
+  }
+
   // --- Dynamic Data Extraction ---
   function getQRData() {
     clearErrors();
@@ -190,6 +436,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
       }
       data = val;
+    } else if (currentType === 'image') {
+      if (uploadedImagePublicUrl) {
+        data = uploadedImagePublicUrl;
+      } else if (imageUrlInput && imageUrlInput.value.trim()) {
+        data = buildViewerUrl(imageUrlInput.value.trim());
+      } else {
+        showError('imageGroup', 'Please upload an image or paste an image link.');
+        return null;
+      }
     }
 
     return data;
@@ -234,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('QR Generation failed:', err);
-      showToast('Error generating QR Code. Text may be too long.', 'alert-triangle');
+      showToast('Error generating QR Code. Content may be too large.', 'alert-triangle');
     }
   }
 
@@ -248,6 +503,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (urlInput) urlInput.value = '';
     const textInput = document.getElementById('textInput');
     if (textInput) textInput.value = '';
+    if (imageFileInput) imageFileInput.value = '';
+    if (imageUrlInput) imageUrlInput.value = '';
+    if (imagePreviewCard) imagePreviewCard.style.display = 'none';
+    if (imageDropzone) imageDropzone.style.display = 'flex';
+    if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
+    uploadedImageFile = null;
+    uploadedImageDataUrl = null;
+    uploadedImagePublicUrl = null;
     clearErrors();
     generateQR(false);
     showToast('Form cleared', 'rotate-ccw');
@@ -1390,7 +1653,91 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Initial QR Code rendering, Background Wave, Zero-Gravity, Hero Wave, Scroll Reveal & PWA Init
+  // --- Scanned Image Viewer Modal Handler ---
+  function initScannedImageViewer() {
+    const modal = document.getElementById('scannedImageViewerModal');
+    const backdrop = document.getElementById('scannedModalBackdrop');
+    const closeBtn = document.getElementById('scannedImageCloseBtn');
+    const loader = document.getElementById('scannedImageLoader');
+    const displayImg = document.getElementById('scannedImageDisplay');
+    const downloadBtn = document.getElementById('scannedImageDownloadBtn');
+    const copyBtn = document.getElementById('scannedImageCopyBtn');
+    const openBtn = document.getElementById('scannedImageOpenBtn');
+    const createBtn = document.getElementById('scannedImageCreateBtn');
+
+    // Parse URL query parameter: ?img=... or ?view=...
+    const urlParams = new URLSearchParams(window.location.search);
+    let scannedTarget = urlParams.get('img') || urlParams.get('view') || urlParams.get('image');
+
+    if (!scannedTarget && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      scannedTarget = hashParams.get('img') || hashParams.get('view') || hashParams.get('image');
+    }
+
+    if (!scannedTarget || !modal) return;
+
+    // Open Modal
+    modal.classList.add('is-active');
+    modal.setAttribute('aria-hidden', 'false');
+
+    if (loader) loader.style.display = 'flex';
+    if (displayImg) displayImg.style.display = 'none';
+
+    // Load the image
+    const imgObj = new Image();
+    imgObj.onload = () => {
+      if (loader) loader.style.display = 'none';
+      if (displayImg) {
+        displayImg.src = scannedTarget;
+        displayImg.style.display = 'block';
+      }
+    };
+    imgObj.onerror = () => {
+      if (loader) {
+        loader.innerHTML = '<i data-feather="alert-circle"></i><span>Failed to load scanned image. Link may be invalid or expired.</span>';
+        if (window.feather) feather.replace();
+      }
+    };
+    imgObj.src = scannedTarget;
+
+    // Set actions
+    if (downloadBtn) {
+      downloadBtn.href = scannedTarget;
+    }
+    if (openBtn) {
+      openBtn.href = scannedTarget;
+    }
+    if (copyBtn) {
+      copyBtn.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(scannedTarget);
+          showToast('Image link copied to clipboard!', 'check');
+        } catch {
+          showToast('Failed to copy link', 'alert-triangle');
+        }
+      };
+    }
+
+    function closeModal() {
+      modal.classList.remove('is-active');
+      modal.setAttribute('aria-hidden', 'true');
+      // Clean query parameter from URL without page refresh
+      const cleanUrl = window.location.pathname + window.location.hash.split('?')[0];
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (backdrop) backdrop.addEventListener('click', closeModal);
+    if (createBtn) {
+      createBtn.addEventListener('click', () => {
+        closeModal();
+        const generatorEl = document.getElementById('generator');
+        if (generatorEl) generatorEl.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+  }
+
+  // Initial QR Code rendering, Background Wave, Zero-Gravity, Hero Wave, Scroll Reveal, PWA & Scanner Init
   generateQR(false);
   renderHistory();
   initBackgroundWaveCanvas();
@@ -1398,4 +1745,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initHeroWaveText();
   initScrollReveal();
   initPWAInstallation();
+  initScannedImageViewer();
 });
