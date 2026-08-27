@@ -420,11 +420,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  const qrTargetPreview = document.getElementById('qrTargetPreview');
+
   if (imageUrlInput) {
-    imageUrlInput.addEventListener('input', () => {
+    const handleUrlUpdate = () => {
       let val = imageUrlInput.value.trim();
       if (val) {
-        if (!val.match(/^https?:\/\//i)) {
+        if (!val.match(/^https?:\/\//i) && !val.startsWith('data:')) {
           val = 'https://' + val;
         }
         uploadedImagePublicUrl = val;
@@ -436,6 +438,12 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadedImagePublicUrl = null;
         generateQR(false);
       }
+    };
+
+    imageUrlInput.addEventListener('input', handleUrlUpdate);
+    imageUrlInput.addEventListener('change', handleUrlUpdate);
+    imageUrlInput.addEventListener('paste', () => {
+      setTimeout(handleUrlUpdate, 50);
     });
   }
 
@@ -464,12 +472,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       data = val;
     } else if (currentType === 'image') {
-      if (imageUrlInput && imageUrlInput.value.trim()) {
-        let val = imageUrlInput.value.trim();
-        if (!val.match(/^https?:\/\//i)) {
-          val = 'https://' + val;
+      const urlVal = imageUrlInput ? imageUrlInput.value.trim() : '';
+      if (urlVal) {
+        let clean = urlVal;
+        if (!clean.match(/^https?:\/\//i) && !clean.startsWith('data:')) {
+          clean = 'https://' + clean;
         }
-        data = val;
+        data = clean;
       } else if (uploadedImagePublicUrl) {
         data = uploadedImagePublicUrl;
       } else {
@@ -502,6 +511,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!dataText) return;
 
     activeQrText = dataText;
+
+    if (qrTargetPreview) {
+      if (activeQrText.startsWith('data:image')) {
+        qrTargetPreview.textContent = 'Target: Direct Embedded Image';
+      } else {
+        qrTargetPreview.textContent = 'Target: ' + activeQrText;
+      }
+    }
 
     const options = {
       size: parseInt(sizeSelect.value, 10) || 256,
