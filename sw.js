@@ -1,5 +1,5 @@
 // QRForge Service Worker for 100% Offline Functionality & PWA Installation
-const CACHE_NAME = 'qrforge-offline-v3';
+const CACHE_NAME = 'qrforge-offline-v4';
 
 const OFFLINE_ASSETS = [
   './',
