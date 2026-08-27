@@ -252,28 +252,77 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${origin}${path}?${params.toString()}`;
   }
 
-  // Upload image to local IndexedDB and prepare instant QR link
+  // Generate optimized direct image Data URL (fits safely in full-capacity QR code)
+  function generateDirectImageDataUrl(file, maxDimension = 64, quality = 0.35) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDimension) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            }
+          } else {
+            if (height > maxDimension) {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          canvas.width = Math.max(width, 1);
+          canvas.height = Math.max(height, 1);
+          const ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'medium';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          let data = canvas.toDataURL('image/jpeg', quality);
+          resolve(data);
+        };
+        img.onerror = () => resolve(null);
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Upload image to local storage & generate direct image QR code
   async function uploadAndProcessImage(file, imageId) {
     if (!file) return;
 
     isImageUploading = true;
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'block';
-    if (uploadStatusText) uploadStatusText.textContent = 'Saving image and generating QR code...';
+    if (uploadStatusText) uploadStatusText.textContent = 'Generating direct image QR code...';
 
-    // 1. Create clean, lightweight QR code URL (~55 characters)
-    uploadedImagePublicUrl = buildViewerUrl({ id: imageId });
+    // 1. Generate direct image data URL (~700 chars)
+    let directDataUrl = null;
+    try {
+      directDataUrl = await generateDirectImageDataUrl(file, 64, 0.35);
+    } catch (err) {
+      console.warn('Direct image payload error:', err);
+    }
+
+    // 2. Set QR code data directly to the image data URL
+    uploadedImagePublicUrl = directDataUrl || buildViewerUrl({ id: imageId });
     clearErrors();
     generateQR(false);
 
     if (imageBadge) {
-      imageBadge.textContent = 'Ready (Offline)';
+      imageBadge.textContent = 'Image Ready';
       imageBadge.style.background = 'var(--success-bg)';
       imageBadge.style.color = 'var(--success)';
     }
 
     if (uploadProgressContainer) uploadProgressContainer.style.display = 'none';
     isImageUploading = false;
-    showToast('Image QR Code generated successfully!', 'check');
+    showToast('Direct Image QR Code generated!', 'check');
   }
 
   async function handleImageSelected(file) {
